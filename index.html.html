@@ -1,0 +1,2330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Digital Product Passport — UI System</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: { sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'sans-serif'] },
+      colors: {
+        ink:      { DEFAULT: '#1C1B17', 2: '#54534C', 3: '#66645C' },
+        page:     '#FAF9F5',
+        line:     { DEFAULT: '#E7E4DB', strong: '#D6D2C6' },
+        brand:    { DEFAULT: '#167537', dark: '#10592A', tint: '#EAF4ED' },
+        ok:       { DEFAULT: '#1A6C37', tint: '#E8F3EA' },
+        warn:     { DEFAULT: '#8A5A00', tint: '#FDF3E0' },
+        risk:     { DEFAULT: '#A3271F', tint: '#FBEDEC' },
+        info:     { DEFAULT: '#3A5A8A', tint: '#EDF1F8' },
+        muted:    { DEFAULT: '#54534C', tint: '#F1F0EC' },
+      },
+      borderRadius: { DEFAULT: '8px', lg: '12px', xl: '16px' },
+      boxShadow: {
+        e1: '0 1px 2px rgba(31,29,23,.05)',
+        e2: '0 2px 4px rgba(31,29,23,.05), 0 6px 16px rgba(31,29,23,.06)',
+        e3: '0 8px 24px rgba(31,29,23,.12)',
+      },
+    },
+  },
+};
+</script>
+
+<style type="text/tailwindcss">
+  @layer base {
+    html { -webkit-text-size-adjust: 100%; }
+    body { @apply font-sans text-ink antialiased; }
+    /* Numerals never reflow between states */
+    .tnum { font-variant-numeric: tabular-nums; }
+    :focus-visible { outline: 2px solid #167537; outline-offset: 2px; border-radius: 4px; }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+  }
+
+  @layer components {
+    /* ---------- Type ladder ---------- */
+    .t-title   { @apply text-[26px] leading-8 font-semibold tracking-[-0.02em] text-ink; }
+    .t-section { @apply text-[18px] leading-6 font-semibold tracking-[-0.01em] text-ink; }
+    .t-card    { @apply text-[16px] leading-[22px] font-semibold text-ink; }
+    .t-body    { @apply text-[16px] leading-6 font-normal text-ink; }
+    .t-sec     { @apply text-[14px] leading-5 font-normal text-ink-2; }
+    .t-meta    { @apply text-[13px] leading-[18px] font-medium text-ink-2; }
+    .t-num     { @apply text-[28px] leading-8 font-semibold tracking-[-0.02em] text-ink tnum; }
+
+    /* ---------- Surfaces ---------- */
+    .card      { @apply bg-white border border-line rounded-lg; }
+    .card-lift { @apply bg-white rounded-lg shadow-e2; }
+    .divide-row > * + * { @apply border-t border-line; }
+
+    /* ---------- Buttons: one filled primary per screen ---------- */
+    .btn        { @apply inline-flex items-center justify-center gap-2 min-h-[52px] px-5 rounded-lg
+                         text-[16px] font-semibold transition-colors select-none; }
+    .btn-primary{ @apply btn bg-brand text-white active:bg-brand-dark hover:bg-brand-dark; }
+    .btn-second { @apply btn bg-white text-brand border-[1.5px] border-brand hover:bg-brand-tint; }
+    .btn-third  { @apply btn bg-transparent text-brand px-3 hover:bg-brand-tint; }
+    .btn-quiet  { @apply btn bg-white text-ink border border-line hover:bg-page; }
+
+    /* Tap targets: 48px floor everywhere ------------------------- */
+    .tap        { @apply min-h-[48px] min-w-[48px] inline-flex items-center justify-center; }
+    .iconbtn    { @apply tap rounded-lg text-ink-2 hover:bg-muted-tint transition-colors; }
+
+    /* ---------- Status: tint + text + glyph. Never hue alone ----- */
+    .chip       { @apply inline-flex items-center gap-1.5 h-8 px-2.5 rounded text-[13px] font-semibold whitespace-nowrap; }
+    .chip-ok    { @apply chip bg-ok-tint    text-ok; }
+    .chip-warn  { @apply chip bg-warn-tint  text-warn; }
+    .chip-risk  { @apply chip bg-risk-tint  text-risk; }
+    .chip-info  { @apply chip bg-info-tint  text-info; }
+    .chip-mute  { @apply chip bg-muted-tint text-muted; }
+
+    /* Filter pills — pressable, so they use brand */
+    .pill       { @apply inline-flex items-center gap-1.5 h-11 px-4 rounded-full text-[14px] font-medium
+                         bg-white border border-line text-ink-2 whitespace-nowrap transition-colors hover:bg-page; }
+    .pill-on    { @apply bg-brand-tint border-brand text-brand font-semibold; }
+
+    /* ---------- Fields ---------- */
+    .label      { @apply block text-[14px] font-semibold text-ink mb-2; }
+    .field      { @apply w-full min-h-[52px] px-4 rounded bg-white border border-line
+                         text-[16px] text-ink placeholder:text-ink-3
+                         focus:border-brand focus:ring-2 focus:ring-brand/15 outline-none transition; }
+    .dropzone   { @apply w-full rounded-lg border-[1.5px] border-dashed border-line-strong bg-page
+                         py-8 px-4 text-center hover:border-brand hover:bg-brand-tint/40 transition-colors; }
+
+    /* ---------- Icon tiles ---------- */
+    .tile       { @apply w-11 h-11 shrink-0 rounded grid place-items-center; }
+
+    /* ---------- Progress ---------- */
+    .track      { @apply h-2 w-full rounded-full bg-[#EDEBE4] overflow-hidden; }
+    .track > i  { @apply block h-full rounded-full bg-brand; }
+
+    /* ---------- Notices ---------- */
+    .notice     { @apply flex gap-3 p-4 rounded-lg text-[14px] leading-5; }
+
+    /* ---------- Signature: handloom weave ----------------------
+       Used ONLY on passport-identity surfaces (QR, published
+       passport, publish readiness). Warp + weft at 3% opacity. */
+    .weave { position: relative; }
+    .weave::before {
+      content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+      background-image:
+        repeating-linear-gradient(90deg, rgba(22,117,55,.075) 0 1.5px, transparent 1.5px 9px),
+        repeating-linear-gradient(0deg,  rgba(22,117,55,.055) 0 1.5px, transparent 1.5px 9px);
+      mask-image: radial-gradient(120% 100% at 50% 0%, #000 20%, transparent 78%);
+      -webkit-mask-image: radial-gradient(120% 100% at 50% 0%, #000 20%, transparent 78%);
+    }
+  }
+</style>
+
+<style>
+  /* Device shell + screen routing (outside Tailwind layers on purpose) */
+  .scroll-area { scrollbar-width: none; -ms-overflow-style: none; }
+  .scroll-area::-webkit-scrollbar { display: none; }
+  .screen { display: none; }
+  .screen.is-active { display: flex; }
+  .navlink.is-active { background: #EAF4ED; color: #167537; font-weight: 600; }
+  .hscroll { scrollbar-width: none; }
+  .hscroll::-webkit-scrollbar { display: none; }
+</style>
+</head>
+
+<body class="bg-[#E9E6DD]">
+
+<!-- ============================ ICON SPRITE ============================
+     One family. 24px box, 1.5px stroke, round caps/joins, currentColor.
+     Filled variants exist only for the active tab-bar item.            -->
+<svg width="0" height="0" class="hidden" aria-hidden="true">
+  <defs>
+    <g id="s" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></g>
+  </defs>
+  <symbol id="i-menu" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h11"/></g></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9a6 6 0 1 0-12 0c0 5-2 6-2 6h16s-2-1-2-6"/><path d="M10.3 20a2 2 0 0 0 3.4 0"/></g></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></g></symbol>
+  <symbol id="i-right" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></g></symbol>
+  <symbol id="i-down" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l7 7 7-7"/></g></symbol>
+  <symbol id="i-arr-right" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h15M13 6l6 6-6 6"/></g></symbol>
+  <symbol id="i-arr-left" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12H5M11 6l-6 6 6 6"/></g></symbol>
+  <symbol id="i-arr-up" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></g></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></g></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/></g></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></g></symbol>
+  <symbol id="i-check-c" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M8.5 12.4l2.4 2.4 4.6-4.9"/></g></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4.5L21 19.5H3z"/><path d="M12 10v4M12 17h.01"/></g></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></g></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/></g></symbol>
+  <symbol id="i-help" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.6a2.5 2.5 0 1 1 3.3 2.4c-.6.2-.9.7-.9 1.3v.4M12 16.6h.01"/></g></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2l8 4v9.6l-8 4-8-4V7.2z"/><path d="M4 7.2l8 4 8-4M12 11.2V20.8"/></g></symbol>
+  <symbol id="i-passport" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="3" width="15" height="18" rx="2.5"/><circle cx="12" cy="10" r="2.6"/><path d="M9 16.5h6"/></g></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.5" cy="8" r="3"/><path d="M3.5 19a6 6 0 0 1 12 0"/><path d="M16.5 6.2a3 3 0 0 1 0 5.6M17.5 13.6a5.6 5.6 0 0 1 3.2 5"/></g></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h7l5 5v12H6z"/><path d="M13 3.5v5h5"/><path d="M9 13h6M9 16.5h4"/></g></symbol>
+  <symbol id="i-file-plus" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3.5h7l5 5v12H6z"/><path d="M13 3.5v5h5"/><path d="M12 12v5M9.5 14.5h5"/></g></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h16v11H9l-5 3.5z"/><path d="M8.5 11h7"/></g></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 17.5a4 4 0 0 1-.3-8A5.5 5.5 0 0 1 17 10.2a3.6 3.6 0 0 1 .6 7.2"/><path d="M12 20v-8M9 14.5l3-3 3 3"/></g></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11M8 11.5l4 4 4-4"/><path d="M4.5 19.5h15"/></g></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 6.5h6l2 2.5h9v10.5h-17z"/></g></symbol>
+  <symbol id="i-chart" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V11M10 20V5M16 20v-6M4 20h16"/></g></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5L12 4l8 6.5V20H4z"/><path d="M9.5 20v-5.5h5V20"/></g></symbol>
+  <symbol id="i-home-f" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3.2 3.2 10.1V21h6.3v-6h5v6h6.3V10.1z"/></symbol>
+  <symbol id="i-box-f" viewBox="0 0 24 24"><path fill="currentColor" d="M12 2.6 3.4 6.9v10.2L12 21.4l8.6-4.3V6.9zM12 11.1 4.9 7.6 12 4.1l7.1 3.5z"/></symbol>
+  <symbol id="i-inbox" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 13h4l1.5 3h6l1.5-3h4"/><path d="M5.2 5h13.6l1.7 8v6H3.5v-6z"/></g></symbol>
+  <symbol id="i-dots" viewBox="0 0 24 24"><g fill="currentColor"><circle cx="5.5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="18.5" cy="12" r="1.7"/></g></symbol>
+  <symbol id="i-vdots" viewBox="0 0 24 24"><g fill="currentColor"><circle cx="12" cy="5.5" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="12" cy="18.5" r="1.7"/></g></symbol>
+  <symbol id="i-leaf" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 4c0 9-5.5 13-10 13a5 5 0 0 1-5-5C5 7 11 4 20 4z"/><path d="M13 11c-3 1.6-5 4.4-6 9"/></g></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s6.5-6 6.5-11a6.5 6.5 0 1 0-13 0C5.5 15 12 21 12 21z"/><circle cx="12" cy="10" r="2.4"/></g></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.2l7 2.6v6c0 5-3.4 8-7 9.2-3.6-1.2-7-4.2-7-9.2v-6z"/><path d="M9 12l2.2 2.2L15.2 10"/></g></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4.8" y="10.2" width="14.4" height="10" rx="2.4"/><path d="M8.3 10.2V7.6a3.7 3.7 0 0 1 7.4 0v2.6"/></g></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2.6 12S6.2 6 12 6s9.4 6 9.4 6-3.6 6-9.4 6-9.4-6-9.4-6z"/><circle cx="12" cy="12" r="2.6"/></g></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.2 2.4 3.3 5.4 3.3 8.5S14.2 18.1 12 20.5c-2.2-2.4-3.3-5.4-3.3-8.5S9.8 5.9 12 3.5z"/></g></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1.5 1.5"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3A4 4 0 0 0 11 18.7l1.5-1.5"/></g></symbol>
+  <symbol id="i-qr" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><rect x="3.5" y="3.5" width="6.5" height="6.5" rx="1.4"/><rect x="14" y="3.5" width="6.5" height="6.5" rx="1.4"/><rect x="3.5" y="14" width="6.5" height="6.5" rx="1.4"/><path d="M14 14h3v3h-3zM20.5 14v3M17.5 20.5h3"/></g></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5.5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="18.5" r="2.6"/><path d="M8.4 10.8l7.2-3.9M8.4 13.2l7.2 3.9"/></g></symbol>
+  <symbol id="i-print" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 9V3.8h10V9"/><rect x="3.8" y="9" width="16.4" height="7.4" rx="2"/><path d="M7 13.6h10v6.6H7z"/></g></symbol>
+  <symbol id="i-drop" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3.5s6 6.4 6 10.2a6 6 0 0 1-12 0C6 9.9 12 3.5 12 3.5z"/></g></symbol>
+  <symbol id="i-bolt" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 2.8 5 13.5h5.5L10 21.2 19 10.5h-5.6z"/></g></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 19a4.5 4.5 0 0 1-.4-9A6 6 0 0 1 17.8 11 3.9 3.9 0 0 1 18 19z"/><path d="M12 9.5v6M9.6 11.9 12 9.5l2.4 2.4"/></g></symbol>
+  <symbol id="i-recycle" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8.4 8.2 12 2.9l3.6 5.3"/><path d="M12 2.9v7.4"/><path d="M4.4 15.6 7 20.4h5"/><path d="M19.6 15.6 17 20.4h-5"/><path d="m5.6 13.4-1.2 2.2 2.4.4M18.4 13.4l1.2 2.2-2.4.4"/></g></symbol>
+  <symbol id="i-wrench" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.8 3.4a5.4 5.4 0 0 0-6.4 7l-5 5a2.1 2.1 0 0 0 3 3l5-5a5.4 5.4 0 0 0 7-6.4l-3.1 3.1-2.6-.7-.7-2.6z"/></g></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11.5A8 8 0 0 0 6.3 6.7L4 9"/><path d="M4 4v5h5"/><path d="M4 12.5a8 8 0 0 0 13.7 4.8L20 15"/><path d="M20 20v-5h-5"/></g></symbol>
+  <symbol id="i-spool" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="3.5" width="13" height="17" rx="2"/><path d="M5.5 8h13M5.5 16h13M9.5 8v8M14.5 8v8"/></g></symbol>
+  <symbol id="i-loom" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="13" rx="2"/><path d="M8 5.5v13M12 5.5v13M16 5.5v13M3.5 10h17M3.5 14h17"/></g></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3.5 8.5 4.2L12 11.9 3.5 7.7z"/><path d="m3.5 12.2 8.5 4.2 8.5-4.2M3.5 16.4l8.5 4.2 8.5-4.2"/></g></symbol>
+  <symbol id="i-store" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5V20h16V9.5"/><path d="M3.2 9.5 5 4h14l1.8 5.5a3 3 0 0 1-5.6 1 3 3 0 0 1-5.6 0 3 3 0 0 1-5.6-1z"/><path d="M9.5 20v-5.5h5V20"/></g></symbol>
+  <symbol id="i-shirt" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3.5 4 6l1.6 4L8 9.2V20.5h8V9.2l2.4.8L20 6l-5-2.5a3 3 0 0 1-6 0z"/></g></symbol>
+  <symbol id="i-vase" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3.5h6M10 3.5v2.2C10 8 6.5 9 6.5 13.5A6.5 6.5 0 0 0 12 20.5a6.5 6.5 0 0 0 5.5-7C17.5 9 14 8 14 5.7V3.5"/></g></symbol>
+  <symbol id="i-sofa" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 11V7.5A2.5 2.5 0 0 1 7.5 5h9A2.5 2.5 0 0 1 19 7.5V11"/><path d="M3.5 11.5a2 2 0 0 1 2 2V16h13v-2.5a2 2 0 1 1 4 0V19H2v-5.5a2 2 0 0 1 1.5-2z"/></g></symbol>
+  <symbol id="i-bag" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 8h15l1 12.5h-17z"/><path d="M8.5 10.5V7a3.5 3.5 0 0 1 7 0v3.5"/></g></symbol>
+  <symbol id="i-rug" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="6.5" width="17" height="11" rx="1.5"/><path d="M7 6.5v11M17 6.5v11"/><circle cx="12" cy="12" r="2.2"/></g></symbol>
+  <symbol id="i-lamp" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M7 11 9.5 4h5L17 11z"/><path d="M12 11v7M9 20.5h6"/></g></symbol>
+  <symbol id="i-cube" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="4.5" width="15" height="15" rx="3"/><path d="M9.5 9.5h5v5h-5z"/></g></symbol>
+  <symbol id="i-rocket" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13.5 3.5c3.5 0 7 3.5 7 7-1.5 4-5 6.5-8 7.5l-3.5-3.5c1-3 3.5-6.5 4.5-11z"/><path d="M9 14.5 5.5 11M6.5 17.5c-1.2 1.2-1.5 3-1.5 3s1.8-.3 3-1.5"/><circle cx="14.5" cy="9.5" r="1.4"/></g></symbol>
+  <symbol id="i-calendar" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3.8" y="5.5" width="16.4" height="14.7" rx="2.2"/><path d="M3.8 10h16.4M8.5 3.5v3.5M15.5 3.5v3.5"/></g></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10-10a2.6 2.6 0 0 0-3.7-3.7L4.3 16.3z"/><path d="M14 7.5 16.5 10"/></g></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 6.5h15M9 6.5V4.5h6v2M6.5 6.5 7.5 20h9l1-13.5"/><path d="M10.5 10v6.5M13.5 10v6.5"/></g></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></g></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20.5 3.5 10 14"/><path d="M20.5 3.5 14 20.5l-4-6.5-6.5-4z"/></g></symbol>
+  <symbol id="i-map" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m3.5 6.5 5.5-2 6 2 5.5-2v13l-5.5 2-6-2-5.5 2z"/><path d="M9 4.5v13M15 6.5v13"/></g></symbol>
+</svg>
+
+<!-- ============================ APP SHELL ============================ -->
+<div class="lg:flex lg:min-h-screen">
+
+  <!-- Screen navigator (desktop) -->
+  <aside class="hidden lg:flex lg:flex-col w-64 shrink-0 bg-white border-r border-line p-5 gap-1 h-screen sticky top-0 overflow-y-auto scroll-area">
+    <div class="mb-4">
+      <p class="t-card">Digital Product Passport</p>
+      <p class="t-meta">22 screens · UI system v1</p>
+    </div>
+    <nav id="railNav" class="flex flex-col gap-0.5"></nav>
+  </aside>
+
+  <!-- Stage -->
+  <main class="flex-1 min-w-0">
+
+    <!-- Screen navigator (mobile) -->
+    <div class="lg:hidden sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-line px-4 py-2.5 flex items-center gap-3">
+      <label for="screenSelect" class="t-meta shrink-0">Screen</label>
+      <select id="screenSelect" class="flex-1 min-h-[44px] px-3 rounded border border-line bg-white text-[15px] font-medium text-ink outline-none focus:border-brand"></select>
+    </div>
+
+    <div class="lg:py-10 lg:px-6 lg:grid lg:place-items-start lg:justify-center">
+      <!-- Device -->
+      <div id="device"
+           class="relative bg-page w-full lg:w-[402px] lg:rounded-[44px] lg:shadow-e3 lg:ring-[10px] lg:ring-[#1C1B17] lg:overflow-hidden lg:h-[860px] flex flex-col">
+        <!-- Status bar -->
+        <div class="shrink-0 bg-page px-6 pt-3 pb-1 flex items-center justify-between text-[15px] font-semibold text-ink tnum">
+          <span>9:41</span>
+          <span class="flex items-center gap-1.5" aria-hidden="true">
+            <svg width="17" height="12" viewBox="0 0 17 12" fill="currentColor"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="4.5" y="5.5" width="3" height="6.5" rx="1"/><rect x="9" y="3" width="3" height="9" rx="1"/><rect x="13.5" y="0" width="3" height="12" rx="1"/></svg>
+            <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M1 4.2a10 10 0 0 1 14 0M3.6 7a6.4 6.4 0 0 1 8.8 0"/><circle cx="8" cy="10.2" r="1.1" fill="currentColor" stroke="none"/></svg>
+            <svg width="25" height="12" viewBox="0 0 25 12" fill="none"><rect x=".7" y=".7" width="21" height="10.6" rx="3" stroke="currentColor" stroke-opacity=".4" stroke-width="1.2"/><rect x="2.4" y="2.4" width="17.6" height="7.2" rx="1.8" fill="currentColor"/><path d="M23.2 4.3v3.4a1.8 1.8 0 0 0 0-3.4z" fill="currentColor" fill-opacity=".5"/></svg>
+          </span>
+        </div>
+
+        <!-- Screens mount here -->
+        <div id="screens" class="flex-1 min-h-0 flex flex-col">
+<!-- ============================== DASHBOARD ============================== -->
+<section id="scr-dashboard" class="screen flex-col flex-1 min-h-0">
+  <header class="shrink-0 bg-page px-5 pb-4 flex items-center gap-2">
+    <button class="iconbtn -ml-3" aria-label="Open menu"><svg class="w-6 h-6"><use href="#i-menu"/></svg></button>
+    <div class="flex-1 min-w-0">
+      <h1 class="t-title">Dashboard</h1>
+      <p class="t-sec mt-0.5">Welcome back, Asha</p>
+    </div>
+    <button class="iconbtn relative" aria-label="Notifications, 3 unread">
+      <svg class="w-6 h-6"><use href="#i-bell"/></svg>
+      <span class="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-risk text-white text-[11px] font-bold grid place-items-center tnum">3</span>
+    </button>
+    <button class="w-11 h-11 shrink-0 rounded-full bg-brand text-white text-[14px] font-bold grid place-items-center" aria-label="Account">AM</button>
+  </header>
+
+  <div class="flex-1 min-h-0 overflow-y-auto scroll-area px-5 pb-8">
+
+    <!-- DEMOTED: three stat cards → one quiet, non-interactive strip.
+         Same three facts, same order, ~70% less visual weight.        -->
+    <div class="card px-4 py-3 flex items-stretch divide-x divide-line">
+      <div class="flex-1 px-1">
+        <p class="text-[12px] font-semibold uppercase tracking-[0.04em] text-ink-3">Products</p>
+        <p class="text-[20px] leading-7 font-semibold text-ink tnum mt-0.5">42</p>
+        <p class="text-[12px] leading-4 text-ok font-medium tnum">+6 this month</p>
+      </div>
+      <div class="flex-1 px-3">
+        <p class="text-[12px] font-semibold uppercase tracking-[0.04em] text-ink-3">Published</p>
+        <p class="text-[20px] leading-7 font-semibold text-ink tnum mt-0.5">12</p>
+        <p class="text-[12px] leading-4 text-ok font-medium tnum">+3 this month</p>
+      </div>
+      <div class="flex-1 pl-3">
+        <p class="text-[12px] font-semibold uppercase tracking-[0.04em] text-ink-3">In progress</p>
+        <p class="text-[20px] leading-7 font-semibold text-ink tnum mt-0.5">18</p>
+        <p class="text-[12px] leading-4 text-warn font-medium tnum">3 need attention</p>
+      </div>
+    </div>
+
+    <!-- DPP Progress Overview -->
+    <section class="mt-8">
+      <div class="flex items-end justify-between mb-3">
+        <h2 class="t-section">DPP progress</h2>
+        <button class="text-[14px] font-semibold text-brand tap px-2 -mr-2">View all</button>
+      </div>
+
+      <div class="card divide-row">
+        <a href="#" class="flex items-center gap-3 p-4 hover:bg-page transition-colors">
+          <span data-thumb="indigo"></span>
+          <span class="flex-1 min-w-0">
+            <span class="block t-card truncate">Handwoven Cotton Throw</span>
+            <span class="block t-meta tnum">HCT-IND-001</span>
+            <span class="block track mt-2.5"><i style="width:85%"></i></span>
+          </span>
+          <span class="text-right shrink-0">
+            <span class="block text-[17px] font-semibold text-ink tnum">85%</span>
+            <span class="chip-ok mt-1.5 h-7"><svg class="w-3.5 h-3.5"><use href="#i-check"/></svg>Almost done</span>
+          </span>
+        </a>
+
+        <a href="#" class="flex items-center gap-3 p-4 hover:bg-page transition-colors">
+          <span data-thumb="natural"></span>
+          <span class="flex-1 min-w-0">
+            <span class="block t-card truncate">Handwoven Table Runner</span>
+            <span class="block t-meta tnum">HTR-NAT-002</span>
+            <span class="block track mt-2.5"><i style="width:65%"></i></span>
+          </span>
+          <span class="text-right shrink-0">
+            <span class="block text-[17px] font-semibold text-ink tnum">65%</span>
+            <span class="chip-warn mt-1.5 h-7"><svg class="w-3.5 h-3.5"><use href="#i-clock"/></svg>In progress</span>
+          </span>
+        </a>
+
+        <a href="#" class="flex items-center gap-3 p-4 hover:bg-page transition-colors">
+          <span data-thumb="terracotta"></span>
+          <span class="flex-1 min-w-0">
+            <span class="block t-card truncate">Cotton Cushion Cover</span>
+            <span class="block t-meta tnum">CCC-BLK-003</span>
+            <span class="block track mt-2.5"><i style="width:40%"></i></span>
+          </span>
+          <span class="text-right shrink-0">
+            <span class="block text-[17px] font-semibold text-ink tnum">40%</span>
+            <span class="chip-warn mt-1.5 h-7"><svg class="w-3.5 h-3.5"><use href="#i-clock"/></svg>In progress</span>
+          </span>
+        </a>
+      </div>
+
+      <!-- The one filled primary on this screen -->
+      <button class="btn-primary w-full mt-3" data-go="category">
+        <svg class="w-5 h-5"><use href="#i-plus"/></svg>New product
+      </button>
+    </section>
+
+    <!-- Action Center -->
+    <section class="mt-8">
+      <div class="flex items-end justify-between mb-3">
+        <h2 class="t-section">Needs your attention</h2>
+        <span class="chip-warn h-7">4</span>
+      </div>
+
+      <div class="card divide-row">
+        <a href="#" class="flex items-center gap-3 p-4 hover:bg-page transition-colors">
+          <span class="tile bg-info-tint text-info"><svg class="w-[22px] h-[22px]"><use href="#i-users"/></svg></span>
+          <span class="flex-1 min-w-0">
+            <span class="block t-body font-medium">Supplier information needed</span>
+            <span class="block t-sec">For 2 materials in 3 products</span>
+          </span>
+          <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+        </a>
+        <a href="#" class="flex items-center gap-3 p-4 hover:bg-page transition-colors">
+          <span class="tile bg-warn-tint text-warn"><svg class="w-[22px] h-[22px]"><use href="#i-file"/></svg></span>
+          <span class="flex-1 min-w-0">
+            <span class="block t-body font-medium">GOTS certificate is missing</span>
+            <span class="block t-sec">For Organic Cotton in 1 product</span>
+          </span>
+          <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+        </a>
+        <a href="#" class="flex items-center gap-3 p-4 hover:bg-page transition-colors">
+          <span class="tile bg-info-tint text-info"><svg class="w-[22px] h-[22px]"><use href="#i-msg"/></svg></span>
+          <span class="flex-1 min-w-0">
+            <span class="block t-body font-medium">Verification feedback received</span>
+            <span class="block t-sec">For production details in 1 product</span>
+          </span>
+          <span class="chip-info h-7 shrink-0">Review</span>
+        </a>
+        <a href="#" class="flex items-center gap-3 p-4 hover:bg-page transition-colors">
+          <span class="tile bg-muted-tint text-ink-2"><svg class="w-[22px] h-[22px]"><use href="#i-cloud"/></svg></span>
+          <span class="flex-1 min-w-0">
+            <span class="block t-body font-medium">3 documents pending upload</span>
+            <span class="block t-sec">Compliance &amp; test reports</span>
+          </span>
+          <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+        </a>
+      </div>
+    </section>
+
+    <!-- Quick Actions -->
+    <section class="mt-8">
+      <h2 class="t-section mb-3">Quick actions</h2>
+      <div class="grid grid-cols-4 gap-2.5">
+        <a href="#" data-go="builder" class="card p-3 flex flex-col items-center gap-2 text-center hover:bg-page transition-colors">
+          <span class="tile bg-brand-tint text-brand"><svg class="w-[22px] h-[22px]"><use href="#i-file-plus"/></svg></span>
+          <span class="text-[12px] leading-4 font-medium text-ink-2">DPP builder</span>
+        </a>
+        <a href="#" data-go="products" class="card p-3 flex flex-col items-center gap-2 text-center hover:bg-page transition-colors">
+          <span class="tile bg-muted-tint text-ink-2"><svg class="w-[22px] h-[22px]"><use href="#i-box"/></svg></span>
+          <span class="text-[12px] leading-4 font-medium text-ink-2">Products</span>
+        </a>
+        <a href="#" data-go="supplier" class="card p-3 flex flex-col items-center gap-2 text-center hover:bg-page transition-colors">
+          <span class="tile bg-muted-tint text-ink-2"><svg class="w-[22px] h-[22px]"><use href="#i-users"/></svg></span>
+          <span class="text-[12px] leading-4 font-medium text-ink-2">Suppliers</span>
+        </a>
+        <a href="#" data-go="certificates" class="card p-3 flex flex-col items-center gap-2 text-center hover:bg-page transition-colors">
+          <span class="tile bg-muted-tint text-ink-2"><svg class="w-[22px] h-[22px]"><use href="#i-folder"/></svg></span>
+          <span class="text-[12px] leading-4 font-medium text-ink-2">Documents</span>
+        </a>
+      </div>
+    </section>
+  </div>
+
+  <div data-tabbar="dashboard"></div>
+</section>
+
+
+<!-- ============================== PRODUCTS ============================== -->
+<section id="scr-products" class="screen flex-col flex-1 min-h-0">
+  <header class="shrink-0 bg-page px-5 pb-3 flex items-center gap-2">
+    <button class="iconbtn -ml-3" aria-label="Open menu"><svg class="w-6 h-6"><use href="#i-menu"/></svg></button>
+    <h1 class="t-title flex-1">Products</h1>
+    <button class="iconbtn relative -mr-3" aria-label="Notifications, 3 unread">
+      <svg class="w-6 h-6"><use href="#i-bell"/></svg>
+      <span class="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-risk text-white text-[11px] font-bold grid place-items-center tnum">3</span>
+    </button>
+  </header>
+
+  <div class="shrink-0 px-5 pb-3">
+    <div class="relative">
+      <svg class="w-5 h-5 absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none"><use href="#i-search"/></svg>
+      <input type="search" class="field pl-11" placeholder="Search by name or code" aria-label="Search products">
+    </div>
+  </div>
+
+  <div class="shrink-0 hscroll overflow-x-auto px-5 pb-3">
+    <div class="flex gap-2 w-max">
+      <button class="pill pill-on">All <span class="tnum">24</span></button>
+      <button class="pill">In progress <span class="tnum">18</span></button>
+      <button class="pill">Published <span class="tnum">12</span></button>
+      <button class="pill">Needs attention <span class="chip-risk h-5 px-1.5 text-[11px] tnum">3</span></button>
+      <button class="pill">Drafts <span class="tnum">4</span></button>
+    </div>
+  </div>
+
+  <div class="flex-1 min-h-0 overflow-y-auto scroll-area px-5 pb-8">
+    <div class="flex items-center justify-between py-1 mb-2">
+      <p class="t-meta"><span class="tnum font-semibold text-ink">24</span> products</p>
+      <button class="flex items-center gap-1 t-meta tap px-2 -mr-2">Newest first <svg class="w-4 h-4"><use href="#i-down"/></svg></button>
+    </div>
+
+    <div class="space-y-3">
+      <a href="#" data-go="overview" class="card p-4 flex items-center gap-3.5 hover:bg-page transition-colors">
+        <span data-thumb="indigo:lg"></span>
+        <span class="flex-1 min-w-0">
+          <span class="block t-card truncate">Handwoven Cotton Throw</span>
+          <span class="block t-meta tnum mb-2.5">HCT-IND-001</span>
+          <span class="block track"><i style="width:85%"></i></span>
+          <span class="chip-ok h-7 mt-2.5"><svg class="w-3.5 h-3.5"><use href="#i-check"/></svg>In review</span>
+        </span>
+        <span class="flex flex-col items-end gap-2 shrink-0 self-stretch">
+          <span class="text-[17px] font-semibold text-ink tnum">85%</span>
+          <button class="iconbtn -mr-2 mt-auto" aria-label="More options"><svg class="w-5 h-5"><use href="#i-vdots"/></svg></button>
+        </span>
+      </a>
+
+      <a href="#" class="card p-4 flex items-center gap-3.5 hover:bg-page transition-colors">
+        <span data-thumb="natural:lg"></span>
+        <span class="flex-1 min-w-0">
+          <span class="block t-card truncate">Handwoven Cushion Cover</span>
+          <span class="block t-meta tnum mb-2.5">HCC-IND-002</span>
+          <span class="block track"><i style="width:65%"></i></span>
+          <span class="chip-warn h-7 mt-2.5"><svg class="w-3.5 h-3.5"><use href="#i-clock"/></svg>In progress</span>
+        </span>
+        <span class="flex flex-col items-end gap-2 shrink-0 self-stretch">
+          <span class="text-[17px] font-semibold text-ink tnum">65%</span>
+          <button class="iconbtn -mr-2 mt-auto" aria-label="More options"><svg class="w-5 h-5"><use href="#i-vdots"/></svg></button>
+        </span>
+      </a>
+
+      <a href="#" class="card p-4 flex items-center gap-3.5 hover:bg-page transition-colors">
+        <span data-thumb="jute:lg"></span>
+        <span class="flex-1 min-w-0">
+          <span class="block t-card truncate">Jute Shopper Bag</span>
+          <span class="block t-meta tnum mb-2.5">JSB-IND-003</span>
+          <span class="block track"><i style="width:40%" class="!bg-warn"></i></span>
+          <span class="chip-risk h-7 mt-2.5"><svg class="w-3.5 h-3.5"><use href="#i-alert"/></svg>Needs attention</span>
+        </span>
+        <span class="flex flex-col items-end gap-2 shrink-0 self-stretch">
+          <span class="text-[17px] font-semibold text-ink tnum">40%</span>
+          <button class="iconbtn -mr-2 mt-auto" aria-label="More options"><svg class="w-5 h-5"><use href="#i-vdots"/></svg></button>
+        </span>
+      </a>
+
+      <a href="#" class="card p-4 flex items-center gap-3.5 hover:bg-page transition-colors">
+        <span data-thumb="stone:lg"></span>
+        <span class="flex-1 min-w-0">
+          <span class="block t-card truncate">Handwoven Area Rug</span>
+          <span class="block t-meta tnum mb-2.5">HAR-IND-004</span>
+          <span class="block track"><i style="width:100%"></i></span>
+          <span class="chip-ok h-7 mt-2.5"><svg class="w-3.5 h-3.5"><use href="#i-check-c"/></svg>Published</span>
+        </span>
+        <span class="flex flex-col items-end gap-2 shrink-0 self-stretch">
+          <span class="text-[17px] font-semibold text-ink tnum">100%</span>
+          <button class="iconbtn -mr-2 mt-auto" aria-label="More options"><svg class="w-5 h-5"><use href="#i-vdots"/></svg></button>
+        </span>
+      </a>
+    </div>
+
+    <button class="btn-primary w-full mt-6" data-go="category">
+      <svg class="w-5 h-5"><use href="#i-plus"/></svg>Add new product
+    </button>
+  </div>
+
+  <div data-tabbar="products"></div>
+</section>
+
+
+<!-- =========================== PRODUCT OVERVIEW ========================== -->
+<section id="scr-overview" class="screen flex-col flex-1 min-h-0">
+  <header class="shrink-0 bg-page px-5 pb-3 flex items-center gap-2">
+    <button class="iconbtn -ml-3" data-go="products" aria-label="Back"><svg class="w-6 h-6"><use href="#i-back"/></svg></button>
+    <h1 class="text-[20px] font-semibold flex-1 text-center truncate">Product overview</h1>
+    <button class="iconbtn -mr-3" aria-label="Edit product"><svg class="w-6 h-6"><use href="#i-edit"/></svg></button>
+  </header>
+
+  <div class="flex-1 min-h-0 overflow-y-auto scroll-area px-5 pb-8">
+    <div class="card p-4 flex items-center gap-3.5">
+      <span data-thumb="indigo:lg"></span>
+      <span class="flex-1 min-w-0">
+        <span class="block t-card">Handwoven Cotton Throw — Indigo</span>
+        <span class="block t-meta tnum mt-0.5">HCT-IND-001</span>
+        <span class="chip-warn h-7 mt-2"><svg class="w-3.5 h-3.5"><use href="#i-clock"/></svg>In progress</span>
+      </span>
+    </div>
+
+    <div class="card p-4 mt-3">
+      <div class="flex items-center justify-between mb-2.5">
+        <p class="t-card">Passport completeness</p>
+        <p class="text-[20px] font-semibold text-ink tnum">85%</p>
+      </div>
+      <div class="track"><i style="width:85%"></i></div>
+      <p class="t-sec mt-2.5">2 sections still need information before you can publish.</p>
+    </div>
+
+    <h2 class="t-section mt-8 mb-1">Product details</h2>
+    <p class="t-sec mb-3">Basic information shown on the public passport.</p>
+    <dl class="card divide-row">
+      <div class="flex items-start gap-4 p-4"><dt class="t-sec w-[42%] shrink-0">Category</dt><dd class="t-body font-medium flex-1">Textiles &amp; apparel</dd></div>
+      <div class="flex items-start gap-4 p-4"><dt class="t-sec w-[42%] shrink-0">Batch</dt><dd class="t-body font-medium flex-1 tnum">BATCH-HT-2402</dd></div>
+      <div class="flex items-start gap-4 p-4"><dt class="t-sec w-[42%] shrink-0">Weight</dt><dd class="t-body font-medium flex-1 tnum">820 g</dd></div>
+      <div class="flex items-start gap-4 p-4"><dt class="t-sec w-[42%] shrink-0">Dimensions</dt><dd class="t-body font-medium flex-1 tnum">130 × 180 cm</dd></div>
+      <div class="flex items-start gap-4 p-4"><dt class="t-sec w-[42%] shrink-0">Created on</dt><dd class="t-body font-medium flex-1">12 May 2026</dd></div>
+    </dl>
+
+    <h2 class="t-section mt-8 mb-3">Passport sections</h2>
+    <div class="card divide-row">
+      <a href="#" data-go="materials" class="flex items-center gap-3 p-4 hover:bg-page transition-colors">
+        <span class="tile bg-brand-tint text-brand"><svg class="w-[22px] h-[22px]"><use href="#i-spool"/></svg></span>
+        <span class="flex-1 t-body font-medium">Materials</span>
+        <span class="chip-ok h-7"><svg class="w-3.5 h-3.5"><use href="#i-check"/></svg>Complete</span>
+        <svg class="w-5 h-5 text-ink-3"><use href="#i-right"/></svg>
+      </a>
+      <a href="#" data-go="production" class="flex items-center gap-3 p-4 hover:bg-page transition-colors">
+        <span class="tile bg-brand-tint text-brand"><svg class="w-[22px] h-[22px]"><use href="#i-loom"/></svg></span>
+        <span class="flex-1 t-body font-medium">Production</span>
+        <span class="chip-warn h-7"><svg class="w-3.5 h-3.5"><use href="#i-clock"/></svg>90%</span>
+        <svg class="w-5 h-5 text-ink-3"><use href="#i-right"/></svg>
+      </a>
+      <a href="#" data-go="compliance" class="flex items-center gap-3 p-4 hover:bg-page transition-colors">
+        <span class="tile bg-brand-tint text-brand"><svg class="w-[22px] h-[22px]"><use href="#i-shield"/></svg></span>
+        <span class="flex-1 t-body font-medium">Compliance</span>
+        <span class="chip-warn h-7"><svg class="w-3.5 h-3.5"><use href="#i-clock"/></svg>65%</span>
+        <svg class="w-5 h-5 text-ink-3"><use href="#i-right"/></svg>
+      </a>
+      <a href="#" data-go="traceability" class="flex items-center gap-3 p-4 hover:bg-page transition-colors">
+        <span class="tile bg-brand-tint text-brand"><svg class="w-[22px] h-[22px]"><use href="#i-pin"/></svg></span>
+        <span class="flex-1 t-body font-medium">Traceability</span>
+        <span class="chip-warn h-7"><svg class="w-3.5 h-3.5"><use href="#i-clock"/></svg>85%</span>
+        <svg class="w-5 h-5 text-ink-3"><use href="#i-right"/></svg>
+      </a>
+      <a href="#" data-go="sustain" class="flex items-center gap-3 p-4 hover:bg-page transition-colors">
+        <span class="tile bg-brand-tint text-brand"><svg class="w-[22px] h-[22px]"><use href="#i-leaf"/></svg></span>
+        <span class="flex-1 t-body font-medium">Sustainability</span>
+        <span class="chip-warn h-7"><svg class="w-3.5 h-3.5"><use href="#i-clock"/></svg>72%</span>
+        <svg class="w-5 h-5 text-ink-3"><use href="#i-right"/></svg>
+      </a>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 mt-6">
+      <button class="btn-second" data-go="qr"><svg class="w-5 h-5"><use href="#i-qr"/></svg>View QR</button>
+      <button class="btn-primary" data-go="builder">Continue</button>
+    </div>
+  </div>
+
+  <div data-tabbar="products"></div>
+</section>
+
+
+<!-- ========================= SELECT PRODUCT CATEGORY ===================== -->
+<section id="scr-category" class="screen flex-col flex-1 min-h-0">
+  <header class="shrink-0 bg-page px-5 pb-3 flex items-center gap-2">
+    <button class="iconbtn -ml-3" data-go="products" aria-label="Back"><svg class="w-6 h-6"><use href="#i-back"/></svg></button>
+    <h1 class="text-[20px] font-semibold flex-1 text-center truncate">Select category</h1>
+    <span class="w-12 shrink-0"></span>
+  </header>
+
+  <div class="flex-1 min-h-0 overflow-y-auto scroll-area px-5 pb-8">
+    <p class="t-body text-ink-2 mb-5">Pick the category that fits your product. We'll load the right passport template with the fields you need.</p>
+
+    <div class="space-y-3">
+      <a href="#" data-go="template" class="card p-4 flex items-center gap-3.5 hover:bg-page transition-colors">
+        <span class="w-12 h-12 shrink-0 rounded grid place-items-center bg-brand-tint text-brand"><svg class="w-6 h-6"><use href="#i-shirt"/></svg></span>
+        <span class="flex-1 min-w-0"><span class="block t-card">Textiles &amp; apparel</span><span class="block t-sec">Clothing, fabrics, garments</span></span>
+        <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+      </a>
+      <a href="#" class="card p-4 flex items-center gap-3.5 hover:bg-page transition-colors">
+        <span class="w-12 h-12 shrink-0 rounded grid place-items-center bg-muted-tint text-ink-2"><svg class="w-6 h-6"><use href="#i-vase"/></svg></span>
+        <span class="flex-1 min-w-0"><span class="block t-card">Home decor</span><span class="block t-sec">Wall decor, vases, cushions</span></span>
+        <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+      </a>
+      <a href="#" class="card p-4 flex items-center gap-3.5 hover:bg-page transition-colors">
+        <span class="w-12 h-12 shrink-0 rounded grid place-items-center bg-muted-tint text-ink-2"><svg class="w-6 h-6"><use href="#i-sofa"/></svg></span>
+        <span class="flex-1 min-w-0"><span class="block t-card">Furniture</span><span class="block t-sec">Tables, chairs, cabinets</span></span>
+        <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+      </a>
+      <a href="#" class="card p-4 flex items-center gap-3.5 hover:bg-page transition-colors">
+        <span class="w-12 h-12 shrink-0 rounded grid place-items-center bg-muted-tint text-ink-2"><svg class="w-6 h-6"><use href="#i-bag"/></svg></span>
+        <span class="flex-1 min-w-0"><span class="block t-card">Accessories</span><span class="block t-sec">Bags, belts, jewellery</span></span>
+        <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+      </a>
+      <a href="#" class="card p-4 flex items-center gap-3.5 hover:bg-page transition-colors">
+        <span class="w-12 h-12 shrink-0 rounded grid place-items-center bg-muted-tint text-ink-2"><svg class="w-6 h-6"><use href="#i-rug"/></svg></span>
+        <span class="flex-1 min-w-0"><span class="block t-card">Rugs &amp; carpets</span><span class="block t-sec">Handmade rugs, door mats</span></span>
+        <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+      </a>
+      <a href="#" class="card p-4 flex items-center gap-3.5 hover:bg-page transition-colors">
+        <span class="w-12 h-12 shrink-0 rounded grid place-items-center bg-muted-tint text-ink-2"><svg class="w-6 h-6"><use href="#i-lamp"/></svg></span>
+        <span class="flex-1 min-w-0"><span class="block t-card">Lighting</span><span class="block t-sec">Lamps, lights, lanterns</span></span>
+        <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+      </a>
+      <a href="#" class="card p-4 flex items-center gap-3.5 hover:bg-page transition-colors">
+        <span class="w-12 h-12 shrink-0 rounded grid place-items-center bg-muted-tint text-ink-2"><svg class="w-6 h-6"><use href="#i-cube"/></svg></span>
+        <span class="flex-1 min-w-0"><span class="block t-card">Something else</span><span class="block t-sec">Other handmade or custom products</span></span>
+        <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================== TEMPLATE ============================== -->
+<section id="scr-template" class="screen flex-col flex-1 min-h-0">
+  <header class="shrink-0 bg-page px-5 pb-3 flex items-center gap-2">
+    <button class="iconbtn -ml-3" data-go="category" aria-label="Back"><svg class="w-6 h-6"><use href="#i-back"/></svg></button>
+    <h1 class="text-[20px] font-semibold flex-1 text-center truncate">Template</h1>
+    <span class="w-12 shrink-0"></span>
+  </header>
+
+  <div class="flex-1 min-h-0 overflow-y-auto scroll-area px-5 pb-8">
+    <div class="card p-5 flex items-start gap-4">
+      <div class="flex-1">
+        <h2 class="t-section">Textiles &amp; apparel</h2>
+        <p class="t-sec mt-1.5">Fields and documents for fabrics, garments, yarns and textile products.</p>
+      </div>
+      <span class="w-14 h-14 shrink-0 rounded-lg grid place-items-center bg-brand-tint text-brand"><svg class="w-8 h-8"><use href="#i-shirt"/></svg></span>
+    </div>
+
+    <div class="grid grid-cols-3 gap-2.5 mt-3">
+      <div class="card p-3 text-center">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.04em] text-ink-3 leading-4">Fields</p>
+        <p class="text-[22px] leading-7 font-semibold text-ink tnum mt-1">35+</p>
+      </div>
+      <div class="card p-3 text-center">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.04em] text-ink-3 leading-4">Time</p>
+        <p class="text-[22px] leading-7 font-semibold text-ink tnum mt-1">15 min</p>
+      </div>
+      <div class="card p-3 text-center">
+        <p class="text-[11px] font-semibold uppercase tracking-[0.04em] text-ink-3 leading-4">Documents</p>
+        <p class="text-[22px] leading-7 font-semibold text-ink tnum mt-1">4–6</p>
+      </div>
+    </div>
+
+    <h2 class="t-section mt-8 mb-3">What this template covers</h2>
+    <ul class="card divide-row">
+      <li class="flex items-center gap-3 px-4 py-3.5"><svg class="w-5 h-5 text-brand shrink-0"><use href="#i-check"/></svg><span class="t-body">Fibre composition</span></li>
+      <li class="flex items-center gap-3 px-4 py-3.5"><svg class="w-5 h-5 text-brand shrink-0"><use href="#i-check"/></svg><span class="t-body">Dyes and chemicals</span></li>
+      <li class="flex items-center gap-3 px-4 py-3.5"><svg class="w-5 h-5 text-brand shrink-0"><use href="#i-check"/></svg><span class="t-body">Care instructions</span></li>
+      <li class="flex items-center gap-3 px-4 py-3.5"><svg class="w-5 h-5 text-brand shrink-0"><use href="#i-check"/></svg><span class="t-body">Country of origin</span></li>
+      <li class="flex items-center gap-3 px-4 py-3.5"><svg class="w-5 h-5 text-brand shrink-0"><use href="#i-check"/></svg><span class="t-body">Compliance &amp; certifications</span></li>
+      <li class="flex items-center gap-3 px-4 py-3.5"><svg class="w-5 h-5 text-brand shrink-0"><use href="#i-check"/></svg><span class="t-body">Sustainability metrics</span></li>
+      <li class="flex items-center gap-3 px-4 py-3.5"><svg class="w-5 h-5 text-brand shrink-0"><use href="#i-check"/></svg><span class="t-body">End-of-life information</span></li>
+      <li class="px-4 py-3 t-meta">and 4 more</li>
+    </ul>
+
+    <button class="btn-primary w-full mt-6" data-go="create">Use this template</button>
+  </div>
+</section>
+
+
+<!-- ========================= CREATE NEW PRODUCT ========================== -->
+<section id="scr-create" class="screen flex-col flex-1 min-h-0">
+  <header class="shrink-0 bg-page px-5 pb-3 flex items-center gap-2">
+    <button class="iconbtn -ml-3" data-go="template" aria-label="Back"><svg class="w-6 h-6"><use href="#i-back"/></svg></button>
+    <h1 class="text-[20px] font-semibold flex-1 text-center truncate">New product</h1>
+    <button class="iconbtn -mr-3" aria-label="Help"><svg class="w-6 h-6"><use href="#i-help"/></svg></button>
+  </header>
+
+  <div data-stepper="1" class="shrink-0"></div>
+
+  <div class="flex-1 min-h-0 overflow-y-auto scroll-area px-5 pb-8">
+    <div class="card p-4 flex items-center gap-4 mb-6">
+      <div class="flex-1">
+        <p class="t-card">Product basics</p>
+        <p class="t-meta text-brand mt-0.5">Textiles &amp; apparel template</p>
+      </div>
+      <span class="w-12 h-12 shrink-0 rounded grid place-items-center bg-brand-tint text-brand"><svg class="w-6 h-6"><use href="#i-shirt"/></svg></span>
+    </div>
+
+    <div class="space-y-5">
+      <div>
+        <label class="label" for="f-name">Product name</label>
+        <input id="f-name" class="field" placeholder="Handwoven cotton throw">
+      </div>
+      <div>
+        <label class="label" for="f-sku">Product code <span class="font-normal text-ink-3">(SKU)</span></label>
+        <input id="f-sku" class="field tnum" placeholder="HCT-IND-001">
+        <p class="t-meta mt-1.5 text-ink-3">Your own code for this product. Any format works.</p>
+      </div>
+      <div>
+        <label class="label" for="f-desc">Short description</label>
+        <textarea id="f-desc" rows="3" class="field py-3 resize-none" placeholder="Describe your product in a sentence or two"></textarea>
+      </div>
+      <div>
+        <span class="label">Product photo</span>
+        <button class="dropzone">
+          <svg class="w-8 h-8 mx-auto text-ink-3"><use href="#i-upload"/></svg>
+          <span class="block t-body font-semibold mt-2">Add a photo</span>
+          <span class="block t-meta text-ink-3 mt-0.5">JPG or PNG, up to 10&nbsp;MB</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 mt-8">
+      <button class="btn-quiet">Save draft</button>
+      <button class="btn-primary" data-go="builder">Continue</button>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================= DPP BUILDER ============================= -->
+<section id="scr-builder" class="screen flex-col flex-1 min-h-0">
+  <header class="shrink-0 bg-page px-5 pb-3 flex items-center gap-2">
+    <button class="iconbtn -ml-3" aria-label="Open menu"><svg class="w-6 h-6"><use href="#i-menu"/></svg></button>
+    <h1 class="text-[20px] font-semibold flex-1 text-center truncate">Passport builder</h1>
+    <button class="iconbtn relative -mr-3" aria-label="Notifications, 3 unread">
+      <svg class="w-6 h-6"><use href="#i-bell"/></svg>
+      <span class="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-risk text-white text-[11px] font-bold grid place-items-center tnum">3</span>
+    </button>
+  </header>
+
+  <div class="flex-1 min-h-0 overflow-y-auto scroll-area px-5 pb-8">
+    <a href="#" data-go="overview" class="card p-4 flex items-center gap-3.5 hover:bg-page transition-colors">
+      <span data-thumb="indigo:lg"></span>
+      <span class="flex-1 min-w-0">
+        <span class="block t-card">Handwoven Cotton Throw — Indigo</span>
+        <span class="block t-meta tnum mt-0.5">HCT-IND-001</span>
+        <span class="chip-warn h-7 mt-2"><svg class="w-3.5 h-3.5"><use href="#i-clock"/></svg>In progress</span>
+      </span>
+      <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+    </a>
+
+    <div class="card p-4 mt-3">
+      <div class="flex items-center justify-between mb-2.5">
+        <p class="t-card">Overall progress</p>
+        <p class="text-[22px] font-semibold text-ink tnum">65%</p>
+      </div>
+      <div class="track"><i style="width:65%"></i></div>
+      <p class="t-sec mt-2.5">4 of 7 sections done. Next up is production.</p>
+    </div>
+
+    <!-- Segmented checklist. One progress metaphor per context: no rings here. -->
+    <section class="mt-8">
+      <div class="flex items-end justify-between mb-3">
+        <h2 class="t-section">Sections</h2>
+        <span class="t-meta tnum">Step 3 of 7</span>
+      </div>
+
+      <ol class="card divide-row">
+        <li><a href="#" class="flex items-center gap-3.5 p-4 hover:bg-page transition-colors">
+          <span class="w-7 h-7 shrink-0 rounded-full bg-brand text-white grid place-items-center"><svg class="w-4 h-4"><use href="#i-check"/></svg></span>
+          <span class="flex-1 min-w-0"><span class="block t-body font-medium">Product basics</span><span class="block t-meta text-ok">Done</span></span>
+          <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+        </a></li>
+        <li><a href="#" data-go="materials" class="flex items-center gap-3.5 p-4 hover:bg-page transition-colors">
+          <span class="w-7 h-7 shrink-0 rounded-full bg-brand text-white grid place-items-center"><svg class="w-4 h-4"><use href="#i-check"/></svg></span>
+          <span class="flex-1 min-w-0"><span class="block t-body font-medium">Materials</span><span class="block t-meta text-ok">Done</span></span>
+          <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+        </a></li>
+        <li><a href="#" data-go="production" class="flex items-center gap-3.5 p-4 bg-brand-tint hover:bg-brand-tint transition-colors relative">
+          <span class="absolute left-0 top-0 bottom-0 w-1 bg-brand" aria-hidden="true"></span>
+          <span class="w-7 h-7 shrink-0 rounded-full bg-white border-2 border-brand text-brand grid place-items-center text-[13px] font-bold tnum">3</span>
+          <span class="flex-1 min-w-0"><span class="block t-body font-semibold">Production</span><span class="block t-meta text-brand">In progress · 90%</span></span>
+          <svg class="w-5 h-5 text-brand shrink-0"><use href="#i-right"/></svg>
+        </a></li>
+        <li><a href="#" data-go="traceability" class="flex items-center gap-3.5 p-4 hover:bg-page transition-colors">
+          <span class="w-7 h-7 shrink-0 rounded-full border border-line-strong text-ink-3 grid place-items-center text-[13px] font-semibold tnum">4</span>
+          <span class="flex-1 min-w-0"><span class="block t-body font-medium text-ink-2">Traceability</span><span class="block t-meta text-ink-3">Not started</span></span>
+          <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+        </a></li>
+        <li><a href="#" data-go="compliance" class="flex items-center gap-3.5 p-4 hover:bg-page transition-colors">
+          <span class="w-7 h-7 shrink-0 rounded-full border border-line-strong text-ink-3 grid place-items-center text-[13px] font-semibold tnum">5</span>
+          <span class="flex-1 min-w-0"><span class="block t-body font-medium text-ink-2">Compliance</span><span class="block t-meta text-ink-3">Not started</span></span>
+          <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+        </a></li>
+        <li><a href="#" data-go="sustain" class="flex items-center gap-3.5 p-4 hover:bg-page transition-colors">
+          <span class="w-7 h-7 shrink-0 rounded-full border border-line-strong text-ink-3 grid place-items-center text-[13px] font-semibold tnum">6</span>
+          <span class="flex-1 min-w-0"><span class="block t-body font-medium text-ink-2">Sustainability</span><span class="block t-meta text-ink-3">Not started</span></span>
+          <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+        </a></li>
+        <li><a href="#" data-go="review" class="flex items-center gap-3.5 p-4 hover:bg-page transition-colors">
+          <span class="w-7 h-7 shrink-0 rounded-full border border-line-strong text-ink-3 grid place-items-center text-[13px] font-semibold tnum">7</span>
+          <span class="flex-1 min-w-0"><span class="block t-body font-medium text-ink-2">Review &amp; publish</span><span class="block t-meta text-ink-3">Not started</span></span>
+          <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+        </a></li>
+      </ol>
+
+      <button class="btn-primary w-full mt-3" data-go="production">Continue with production</button>
+    </section>
+
+    <section class="mt-8">
+      <div class="flex items-end justify-between mb-3">
+        <h2 class="t-section">Your products</h2>
+        <button class="text-[14px] font-semibold text-brand tap px-2 -mr-2" data-go="products">View all</button>
+      </div>
+      <div class="card divide-row">
+        <a href="#" class="flex items-center gap-3 p-4 hover:bg-page transition-colors">
+          <span data-thumb="indigo"></span>
+          <span class="flex-1 min-w-0 t-body font-medium">Handwoven Cotton Throw</span>
+          <span class="chip-ok h-7 tnum">65%</span>
+        </a>
+        <a href="#" class="flex items-center gap-3 p-4 hover:bg-page transition-colors">
+          <span data-thumb="natural"></span>
+          <span class="flex-1 min-w-0 t-body font-medium">Handwoven Table Runner</span>
+          <span class="chip-warn h-7 tnum">40%</span>
+        </a>
+        <a href="#" class="flex items-center gap-3 p-4 hover:bg-page transition-colors">
+          <span data-thumb="terracotta"></span>
+          <span class="flex-1 min-w-0 t-body font-medium">Cotton Cushion Cover</span>
+          <span class="chip-risk h-7 tnum">20%</span>
+        </a>
+      </div>
+    </section>
+
+    <div class="notice bg-brand-tint text-ink mt-8">
+      <svg class="w-5 h-5 shrink-0 text-brand mt-0.5"><use href="#i-info"/></svg>
+      <p>Your work saves automatically. You can leave and come back at any time.</p>
+    </div>
+  </div>
+
+  <div data-tabbar="builder"></div>
+</section>
+
+<!-- ============================== MATERIALS ============================== -->
+<section id="scr-materials" class="screen flex-col flex-1 min-h-0">
+  <header class="shrink-0 bg-page px-5 pb-3 flex items-center gap-2">
+    <button class="iconbtn -ml-3" data-go="builder" aria-label="Back"><svg class="w-6 h-6"><use href="#i-back"/></svg></button>
+    <h1 class="text-[20px] font-semibold flex-1 text-center truncate">Materials</h1>
+    <button class="iconbtn -mr-3" aria-label="Help"><svg class="w-6 h-6"><use href="#i-help"/></svg></button>
+  </header>
+
+  <div data-prodbar="indigo|Handwoven Cotton Throw — Indigo|HCT-IND-001|warn|In progress" class="shrink-0 px-5 pb-3"></div>
+  <div data-stepper="2" class="shrink-0"></div>
+
+  <div class="flex-1 min-h-0 overflow-y-auto scroll-area px-5 pb-8">
+    <div class="card p-4">
+      <div class="flex items-center justify-between mb-2.5">
+        <p class="t-card">Materials complete</p>
+        <p class="text-[22px] font-semibold text-ink tnum">85%</p>
+      </div>
+      <div class="track"><i style="width:85%"></i></div>
+      <p class="t-sec mt-2.5">Add the remaining materials and their percentages.</p>
+    </div>
+
+    <h2 class="t-section mt-8 mb-1">Material information</h2>
+    <p class="t-sec mb-3">Details about the materials used in your product.</p>
+
+    <div class="card divide-row">
+      <a href="#" data-go="composition" class="flex items-center gap-3.5 p-4 hover:bg-page transition-colors">
+        <span class="tile bg-brand-tint text-brand"><svg class="w-[22px] h-[22px]"><use href="#i-leaf"/></svg></span>
+        <span class="flex-1 min-w-0"><span class="block t-body font-medium">Composition</span><span class="block t-sec">Every material and its share</span></span>
+        <span class="text-[16px] font-semibold text-ink tnum shrink-0">90%</span>
+        <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+      </a>
+      <a href="#" data-go="matdetails" class="flex items-center gap-3.5 p-4 hover:bg-page transition-colors">
+        <span class="tile bg-brand-tint text-brand"><svg class="w-[22px] h-[22px]"><use href="#i-pin"/></svg></span>
+        <span class="flex-1 min-w-0"><span class="block t-body font-medium">Origin</span><span class="block t-sec">Where each material came from</span></span>
+        <span class="text-[16px] font-semibold text-ink tnum shrink-0">100%</span>
+        <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+      </a>
+      <a href="#" data-go="supplier" class="flex items-center gap-3.5 p-4 hover:bg-page transition-colors">
+        <span class="tile bg-brand-tint text-brand"><svg class="w-[22px] h-[22px]"><use href="#i-users"/></svg></span>
+        <span class="flex-1 min-w-0"><span class="block t-body font-medium">Suppliers</span><span class="block t-sec">Who supplied each material</span></span>
+        <span class="text-[16px] font-semibold text-warn tnum shrink-0">80%</span>
+        <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+      </a>
+      <a href="#" data-go="certificates" class="flex items-center gap-3.5 p-4 hover:bg-page transition-colors">
+        <span class="tile bg-brand-tint text-brand"><svg class="w-[22px] h-[22px]"><use href="#i-shield"/></svg></span>
+        <span class="flex-1 min-w-0"><span class="block t-body font-medium">Certificates</span><span class="block t-sec">Proof for your material claims</span></span>
+        <span class="text-[16px] font-semibold text-warn tnum shrink-0">50%</span>
+        <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+      </a>
+      <a href="#" class="flex items-center gap-3.5 p-4 hover:bg-page transition-colors">
+        <span class="tile bg-brand-tint text-brand"><svg class="w-[22px] h-[22px]"><use href="#i-recycle"/></svg></span>
+        <span class="flex-1 min-w-0"><span class="block t-body font-medium">Recycled content</span><span class="block t-sec">Share of recycled material</span></span>
+        <span class="text-[16px] font-semibold text-risk tnum shrink-0">0%</span>
+        <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+      </a>
+    </div>
+
+    <div class="notice bg-brand-tint text-ink mt-6">
+      <svg class="w-5 h-5 shrink-0 text-brand mt-0.5"><use href="#i-info"/></svg>
+      <p>Complete every material section so your passport is compliant and easy for buyers to trust.</p>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 mt-6">
+      <button class="btn-quiet" data-go="builder"><svg class="w-5 h-5"><use href="#i-arr-left"/></svg>Back</button>
+      <button class="btn-primary" data-go="production">Next<svg class="w-5 h-5"><use href="#i-arr-right"/></svg></button>
+    </div>
+  </div>
+</section>
+
+
+<!-- ========================= MATERIAL COMPOSITION ======================== -->
+<section id="scr-composition" class="screen flex-col flex-1 min-h-0">
+  <header class="shrink-0 bg-page px-5 pb-3 flex items-center gap-2">
+    <button class="iconbtn -ml-3" data-go="materials" aria-label="Back"><svg class="w-6 h-6"><use href="#i-back"/></svg></button>
+    <h1 class="text-[20px] font-semibold flex-1 text-center truncate">Composition</h1>
+    <button class="iconbtn -mr-3" aria-label="Help"><svg class="w-6 h-6"><use href="#i-help"/></svg></button>
+  </header>
+
+  <div class="flex-1 min-h-0 overflow-y-auto scroll-area px-5 pb-8">
+    <div class="card p-4">
+      <div class="flex items-baseline justify-between mb-3">
+        <p class="t-card">Total composition</p>
+        <p class="text-[22px] font-semibold text-warn tnum">90%</p>
+      </div>
+      <!-- Stacked bar: one bar, one meaning. Colours are fixed per material. -->
+      <div class="h-3 w-full rounded-full bg-[#EDEBE4] overflow-hidden flex" role="img" aria-label="Organic cotton 70 percent, recycled cotton 15 percent, natural dye 5 percent, 10 percent unassigned">
+        <span class="h-full bg-brand" style="width:70%"></span>
+        <span class="h-full bg-[#4C8C63]" style="width:15%"></span>
+        <span class="h-full bg-[#9FBFA8]" style="width:5%"></span>
+      </div>
+      <p class="t-sec mt-3">10% is still unassigned. Composition must reach 100% before you publish.</p>
+    </div>
+
+    <h2 class="t-section mt-8 mb-3">Materials used</h2>
+    <div class="space-y-3">
+      <div class="card p-4">
+        <div class="flex items-start gap-3">
+          <span class="w-3 h-3 rounded-full bg-brand mt-1.5 shrink-0"></span>
+          <div class="flex-1 min-w-0">
+            <p class="t-card">Organic cotton</p>
+            <p class="t-sec mt-0.5">Gujarat, India · Shree Organics</p>
+            <span class="chip-ok h-7 mt-2"><svg class="w-3.5 h-3.5"><use href="#i-shield"/></svg>GOTS certified</span>
+          </div>
+          <div class="text-right shrink-0">
+            <p class="text-[20px] font-semibold text-ink tnum">70%</p>
+            <button class="iconbtn -mr-2 mt-1" aria-label="Edit organic cotton"><svg class="w-5 h-5"><use href="#i-edit"/></svg></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card p-4">
+        <div class="flex items-start gap-3">
+          <span class="w-3 h-3 rounded-full bg-[#4C8C63] mt-1.5 shrink-0"></span>
+          <div class="flex-1 min-w-0">
+            <p class="t-card">Recycled cotton</p>
+            <p class="t-sec mt-0.5">Panipat, India · Reweave Mills</p>
+            <span class="chip-warn h-7 mt-2"><svg class="w-3.5 h-3.5"><use href="#i-clock"/></svg>Certificate pending</span>
+          </div>
+          <div class="text-right shrink-0">
+            <p class="text-[20px] font-semibold text-ink tnum">15%</p>
+            <button class="iconbtn -mr-2 mt-1" aria-label="Edit recycled cotton"><svg class="w-5 h-5"><use href="#i-edit"/></svg></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card p-4">
+        <div class="flex items-start gap-3">
+          <span class="w-3 h-3 rounded-full bg-[#9FBFA8] mt-1.5 shrink-0"></span>
+          <div class="flex-1 min-w-0">
+            <p class="t-card">Natural indigo dye</p>
+            <p class="t-sec mt-0.5">Rajasthan, India · Neel Naturals</p>
+            <span class="chip-ok h-7 mt-2"><svg class="w-3.5 h-3.5"><use href="#i-check"/></svg>Verified</span>
+          </div>
+          <div class="text-right shrink-0">
+            <p class="text-[20px] font-semibold text-ink tnum">5%</p>
+            <button class="iconbtn -mr-2 mt-1" aria-label="Edit natural indigo dye"><svg class="w-5 h-5"><use href="#i-edit"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="w-full mt-3 min-h-[52px] rounded-lg border-[1.5px] border-dashed border-line-strong text-brand font-semibold
+                   flex items-center justify-center gap-2 hover:bg-brand-tint hover:border-brand transition-colors">
+      <svg class="w-5 h-5"><use href="#i-plus"/></svg>Add material
+    </button>
+
+    <div class="notice bg-warn-tint text-ink mt-6">
+      <svg class="w-5 h-5 shrink-0 text-warn mt-0.5"><use href="#i-alert"/></svg>
+      <p><span class="font-semibold">10% left to assign.</span> Add the remaining material, or adjust the percentages above.</p>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 mt-6">
+      <button class="btn-quiet" data-go="materials"><svg class="w-5 h-5"><use href="#i-arr-left"/></svg>Back</button>
+      <button class="btn-primary" data-go="matdetails">Save</button>
+    </div>
+  </div>
+</section>
+
+
+<!-- ========================== MATERIAL DETAILS =========================== -->
+<section id="scr-matdetails" class="screen flex-col flex-1 min-h-0">
+  <header class="shrink-0 bg-page px-5 pb-3 flex items-center gap-2">
+    <button class="iconbtn -ml-3" data-go="composition" aria-label="Back"><svg class="w-6 h-6"><use href="#i-back"/></svg></button>
+    <h1 class="text-[20px] font-semibold flex-1 text-center truncate">Material details</h1>
+    <button class="iconbtn -mr-3 text-risk" aria-label="Remove material"><svg class="w-6 h-6"><use href="#i-trash"/></svg></button>
+  </header>
+
+  <div class="flex-1 min-h-0 overflow-y-auto scroll-area px-5 pb-8">
+    <div class="card p-4 flex items-center gap-3.5">
+      <span class="tile bg-brand-tint text-brand"><svg class="w-[22px] h-[22px]"><use href="#i-spool"/></svg></span>
+      <span class="flex-1 min-w-0">
+        <span class="block t-card">Organic cotton</span>
+        <span class="block t-sec">70% of this product</span>
+      </span>
+      <span class="chip-ok h-7"><svg class="w-3.5 h-3.5"><use href="#i-shield"/></svg>Certified</span>
+    </div>
+
+    <div class="space-y-5 mt-6">
+      <div>
+        <label class="label" for="m-name">Material name</label>
+        <input id="m-name" class="field" value="Organic cotton">
+      </div>
+      <div>
+        <label class="label" for="m-pct">Share of product</label>
+        <div class="relative">
+          <input id="m-pct" class="field pr-10 tnum" value="70" inputmode="numeric">
+          <span class="absolute right-4 top-1/2 -translate-y-1/2 t-body text-ink-3">%</span>
+        </div>
+      </div>
+      <div>
+        <label class="label" for="m-country">Country of origin</label>
+        <div class="relative">
+          <select id="m-country" class="field appearance-none pr-10"><option>India</option><option>Bangladesh</option><option>Türkiye</option></select>
+          <svg class="w-5 h-5 absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none"><use href="#i-down"/></svg>
+        </div>
+      </div>
+      <div>
+        <label class="label" for="m-region">Region or city</label>
+        <input id="m-region" class="field" value="Gujarat">
+      </div>
+      <div>
+        <label class="label" for="m-supplier">Supplier</label>
+        <div class="relative">
+          <select id="m-supplier" class="field appearance-none pr-10"><option>Shree Organics</option><option>Reweave Mills</option><option>Add a new supplier…</option></select>
+          <svg class="w-5 h-5 absolute right-3.5 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none"><use href="#i-down"/></svg>
+        </div>
+      </div>
+      <div>
+        <span class="label">Certificate</span>
+        <div class="card p-3.5 flex items-center gap-3">
+          <span class="tile bg-ok-tint text-ok"><svg class="w-[22px] h-[22px]"><use href="#i-file"/></svg></span>
+          <span class="flex-1 min-w-0">
+            <span class="block t-body font-medium truncate">GOTS-2024-8841.pdf</span>
+            <span class="block t-meta">Valid until 14 Mar 2027</span>
+          </span>
+          <button class="iconbtn -mr-1" aria-label="Replace certificate"><svg class="w-5 h-5"><use href="#i-refresh"/></svg></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 mt-8">
+      <button class="btn-quiet" data-go="composition">Cancel</button>
+      <button class="btn-primary" data-go="composition">Save material</button>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================= PRODUCTION ============================== -->
+<section id="scr-production" class="screen flex-col flex-1 min-h-0">
+  <header class="shrink-0 bg-page px-5 pb-3 flex items-center gap-2">
+    <button class="iconbtn -ml-3" data-go="builder" aria-label="Back"><svg class="w-6 h-6"><use href="#i-back"/></svg></button>
+    <h1 class="text-[20px] font-semibold flex-1 text-center truncate">Production</h1>
+    <button class="iconbtn -mr-3" aria-label="Help"><svg class="w-6 h-6"><use href="#i-help"/></svg></button>
+  </header>
+
+  <div data-prodbar="indigo|Handwoven Cotton Throw — Indigo|HCT-IND-001|warn|In progress" class="shrink-0 px-5 pb-3"></div>
+  <div data-stepper="3" class="shrink-0"></div>
+
+  <div class="flex-1 min-h-0 overflow-y-auto scroll-area px-5 pb-8">
+    <div class="card p-4">
+      <div class="flex items-center justify-between mb-2.5">
+        <p class="t-card">Production complete</p>
+        <p class="text-[22px] font-semibold text-ink tnum">90%</p>
+      </div>
+      <div class="track"><i style="width:90%"></i></div>
+      <p class="t-sec mt-2.5">One section left: energy and water use.</p>
+    </div>
+
+    <h2 class="t-section mt-8 mb-1">How it was made</h2>
+    <p class="t-sec mb-3">Tell buyers where and how this product was produced.</p>
+
+    <div class="card divide-row">
+      <a href="#" data-go="prodmethods" class="flex items-center gap-3.5 p-4 hover:bg-page transition-colors">
+        <span class="tile bg-brand-tint text-brand"><svg class="w-[22px] h-[22px]"><use href="#i-loom"/></svg></span>
+        <span class="flex-1 min-w-0"><span class="block t-body font-medium">Production methods</span><span class="block t-sec">Handloom, dyeing, finishing</span></span>
+        <span class="chip-ok h-7"><svg class="w-3.5 h-3.5"><use href="#i-check"/></svg>Done</span>
+      </a>
+      <a href="#" class="flex items-center gap-3.5 p-4 hover:bg-page transition-colors">
+        <span class="tile bg-brand-tint text-brand"><svg class="w-[22px] h-[22px]"><use href="#i-pin"/></svg></span>
+        <span class="flex-1 min-w-0"><span class="block t-body font-medium">Production site</span><span class="block t-sec">Handloom Cluster, Jaipur</span></span>
+        <span class="chip-ok h-7"><svg class="w-3.5 h-3.5"><use href="#i-check"/></svg>Done</span>
+      </a>
+      <a href="#" class="flex items-center gap-3.5 p-4 hover:bg-page transition-colors">
+        <span class="tile bg-brand-tint text-brand"><svg class="w-[22px] h-[22px]"><use href="#i-users"/></svg></span>
+        <span class="flex-1 min-w-0"><span class="block t-body font-medium">Labour &amp; craft</span><span class="block t-sec">12 weavers · 3 days per piece</span></span>
+        <span class="chip-ok h-7"><svg class="w-3.5 h-3.5"><use href="#i-check"/></svg>Done</span>
+      </a>
+      <a href="#" class="flex items-center gap-3.5 p-4 hover:bg-page transition-colors">
+        <span class="tile bg-warn-tint text-warn"><svg class="w-[22px] h-[22px]"><use href="#i-bolt"/></svg></span>
+        <span class="flex-1 min-w-0"><span class="block t-body font-medium">Energy &amp; water</span><span class="block t-sec">Usage during production</span></span>
+        <span class="chip-warn h-7"><svg class="w-3.5 h-3.5"><use href="#i-clock"/></svg>To do</span>
+      </a>
+    </div>
+
+    <h2 class="t-section mt-8 mb-3">Batch</h2>
+    <dl class="card divide-row">
+      <div class="flex items-center gap-4 p-4"><dt class="t-sec w-[42%] shrink-0">Batch number</dt><dd class="t-body font-medium flex-1 tnum">BATCH-HT-2402</dd></div>
+      <div class="flex items-center gap-4 p-4"><dt class="t-sec w-[42%] shrink-0">Quantity made</dt><dd class="t-body font-medium flex-1 tnum">120 pieces</dd></div>
+      <div class="flex items-center gap-4 p-4"><dt class="t-sec w-[42%] shrink-0">Production date</dt><dd class="t-body font-medium flex-1">01 Feb 2026</dd></div>
+    </dl>
+
+    <div class="grid grid-cols-2 gap-3 mt-8">
+      <button class="btn-quiet" data-go="materials"><svg class="w-5 h-5"><use href="#i-arr-left"/></svg>Back</button>
+      <button class="btn-primary" data-go="traceability">Next<svg class="w-5 h-5"><use href="#i-arr-right"/></svg></button>
+    </div>
+  </div>
+</section>
+
+
+<!-- ========================= PRODUCTION METHODS ========================== -->
+<section id="scr-prodmethods" class="screen flex-col flex-1 min-h-0">
+  <header class="shrink-0 bg-page px-5 pb-3 flex items-center gap-2">
+    <button class="iconbtn -ml-3" data-go="production" aria-label="Back"><svg class="w-6 h-6"><use href="#i-back"/></svg></button>
+    <h1 class="text-[20px] font-semibold flex-1 text-center truncate">Production methods</h1>
+    <span class="w-12 shrink-0"></span>
+  </header>
+
+  <div class="flex-1 min-h-0 overflow-y-auto scroll-area px-5 pb-8">
+    <p class="t-body text-ink-2 mb-5">Select every process used to make this product. You can pick more than one.</p>
+
+    <h2 class="t-section mb-3">Weaving &amp; construction</h2>
+    <div class="space-y-2.5">
+      <label class="card p-4 flex items-center gap-3.5 cursor-pointer has-[:checked]:border-brand has-[:checked]:bg-brand-tint transition-colors">
+        <input type="checkbox" checked class="w-6 h-6 shrink-0 rounded accent-brand">
+        <span class="flex-1 min-w-0"><span class="block t-body font-medium">Handloom weaving</span><span class="block t-sec">Woven by hand on a traditional loom</span></span>
+      </label>
+      <label class="card p-4 flex items-center gap-3.5 cursor-pointer has-[:checked]:border-brand has-[:checked]:bg-brand-tint transition-colors">
+        <input type="checkbox" class="w-6 h-6 shrink-0 rounded accent-brand">
+        <span class="flex-1 min-w-0"><span class="block t-body font-medium">Power loom weaving</span><span class="block t-sec">Machine-assisted weaving</span></span>
+      </label>
+      <label class="card p-4 flex items-center gap-3.5 cursor-pointer has-[:checked]:border-brand has-[:checked]:bg-brand-tint transition-colors">
+        <input type="checkbox" checked class="w-6 h-6 shrink-0 rounded accent-brand">
+        <span class="flex-1 min-w-0"><span class="block t-body font-medium">Hand finishing</span><span class="block t-sec">Fringing, hemming and pressing by hand</span></span>
+      </label>
+    </div>
+
+    <h2 class="t-section mt-8 mb-3">Dyeing &amp; treatment</h2>
+    <div class="space-y-2.5">
+      <label class="card p-4 flex items-center gap-3.5 cursor-pointer has-[:checked]:border-brand has-[:checked]:bg-brand-tint transition-colors">
+        <input type="checkbox" checked class="w-6 h-6 shrink-0 rounded accent-brand">
+        <span class="flex-1 min-w-0"><span class="block t-body font-medium">Natural dyeing</span><span class="block t-sec">Plant-based dyes, no synthetics</span></span>
+      </label>
+      <label class="card p-4 flex items-center gap-3.5 cursor-pointer has-[:checked]:border-brand has-[:checked]:bg-brand-tint transition-colors">
+        <input type="checkbox" class="w-6 h-6 shrink-0 rounded accent-brand">
+        <span class="flex-1 min-w-0"><span class="block t-body font-medium">Synthetic dyeing</span><span class="block t-sec">Requires a chemical safety declaration</span></span>
+      </label>
+      <label class="card p-4 flex items-center gap-3.5 cursor-pointer has-[:checked]:border-brand has-[:checked]:bg-brand-tint transition-colors">
+        <input type="checkbox" class="w-6 h-6 shrink-0 rounded accent-brand">
+        <span class="flex-1 min-w-0"><span class="block t-body font-medium">Block printing</span><span class="block t-sec">Hand-carved wooden blocks</span></span>
+      </label>
+    </div>
+
+    <div class="mt-8">
+      <label class="label" for="pm-notes">Anything else about your process?</label>
+      <textarea id="pm-notes" rows="3" class="field py-3 resize-none" placeholder="Optional — buyers like reading this"></textarea>
+    </div>
+
+    <button class="btn-primary w-full mt-8" data-go="production">Save methods</button>
+  </div>
+</section>
+
+
+<!-- ============================= COMPLIANCE ============================== -->
+<section id="scr-compliance" class="screen flex-col flex-1 min-h-0">
+  <header class="shrink-0 bg-page px-5 pb-3 flex items-center gap-2">
+    <button class="iconbtn -ml-3" data-go="builder" aria-label="Back"><svg class="w-6 h-6"><use href="#i-back"/></svg></button>
+    <h1 class="text-[20px] font-semibold flex-1 text-center truncate">Compliance</h1>
+    <button class="iconbtn -mr-3" aria-label="Help"><svg class="w-6 h-6"><use href="#i-help"/></svg></button>
+  </header>
+
+  <div data-prodbar="indigo|Handwoven Cotton Throw — Indigo|HCT-IND-001|warn|In progress" class="shrink-0 px-5 pb-3"></div>
+  <div data-stepper="5" class="shrink-0"></div>
+
+  <div class="flex-1 min-h-0 overflow-y-auto scroll-area px-5 pb-8">
+    <div class="card p-4">
+      <div class="flex items-center justify-between mb-2.5">
+        <p class="t-card">Compliance complete</p>
+        <p class="text-[22px] font-semibold text-ink tnum">65%</p>
+      </div>
+      <div class="track"><i style="width:65%"></i></div>
+      <p class="t-sec mt-2.5">Good progress. 3 sections still need your attention.</p>
+    </div>
+
+    <h2 class="t-section mt-8 mb-3">Compliance sections</h2>
+    <div class="card divide-row">
+      <a href="#" data-go="certificates" class="flex items-center gap-3.5 p-4 hover:bg-page transition-colors">
+        <span class="tile bg-ok-tint text-ok"><svg class="w-[22px] h-[22px]"><use href="#i-check-c"/></svg></span>
+        <span class="flex-1 min-w-0"><span class="block t-body font-medium">Certificates</span><span class="block t-sec">Product &amp; business certificates</span></span>
+        <span class="text-[16px] font-semibold text-ink tnum shrink-0">80%</span>
+        <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+      </a>
+      <a href="#" class="flex items-center gap-3.5 p-4 hover:bg-page transition-colors">
+        <span class="tile bg-warn-tint text-warn"><svg class="w-[22px] h-[22px]"><use href="#i-alert"/></svg></span>
+        <span class="flex-1 min-w-0"><span class="block t-body font-medium">Test reports</span><span class="block t-sec">Lab and test reports</span></span>
+        <span class="text-[16px] font-semibold text-warn tnum shrink-0">40%</span>
+        <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+      </a>
+      <a href="#" class="flex items-center gap-3.5 p-4 hover:bg-page transition-colors">
+        <span class="tile bg-ok-tint text-ok"><svg class="w-[22px] h-[22px]"><use href="#i-check-c"/></svg></span>
+        <span class="flex-1 min-w-0"><span class="block t-body font-medium">Declarations</span><span class="block t-sec">Self &amp; supplier declarations</span></span>
+        <span class="text-[16px] font-semibold text-ink tnum shrink-0">100%</span>
+        <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+      </a>
+      <a href="#" class="flex items-center gap-3.5 p-4 hover:bg-page transition-colors">
+        <span class="tile bg-warn-tint text-warn"><svg class="w-[22px] h-[22px]"><use href="#i-alert"/></svg></span>
+        <span class="flex-1 min-w-0"><span class="block t-body font-medium">Chemical safety</span><span class="block t-sec">REACH and ZDHC</span></span>
+        <span class="text-[16px] font-semibold text-warn tnum shrink-0">20%</span>
+        <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+      </a>
+      <a href="#" class="flex items-center gap-3.5 p-4 hover:bg-page transition-colors">
+        <span class="tile bg-muted-tint text-ink-2"><svg class="w-[22px] h-[22px]"><use href="#i-clock"/></svg></span>
+        <span class="flex-1 min-w-0"><span class="block t-body font-medium">Verification</span><span class="block t-sec">Checked by RHM Exports</span></span>
+        <span class="text-[16px] font-semibold text-warn tnum shrink-0">60%</span>
+        <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+      </a>
+    </div>
+
+    <!-- Amber, not red. These are tasks, not the user's failures. -->
+    <div class="card mt-6 border-warn/35 bg-warn-tint">
+      <div class="flex items-center gap-3 px-4 pt-4 pb-2">
+        <svg class="w-5 h-5 text-warn shrink-0"><use href="#i-alert"/></svg>
+        <p class="t-card flex-1">Still needed</p>
+        <span class="chip-warn h-7 bg-white tnum">3</span>
+      </div>
+      <ul class="px-4 pb-4 space-y-2">
+        <li class="flex gap-2.5 text-[15px] leading-5 text-ink"><span class="text-warn">•</span>Test report has not been uploaded</li>
+        <li class="flex gap-2.5 text-[15px] leading-5 text-ink"><span class="text-warn">•</span>Chemical safety documents are pending</li>
+        <li class="flex gap-2.5 text-[15px] leading-5 text-ink"><span class="text-warn">•</span>GOTS certificate expires in 28 days</li>
+      </ul>
+      <button class="btn-third w-full border-t border-warn/25 rounded-t-none min-h-[48px]">Fix these now<svg class="w-5 h-5"><use href="#i-right"/></svg></button>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 mt-6">
+      <button class="btn-quiet" data-go="traceability"><svg class="w-5 h-5"><use href="#i-arr-left"/></svg>Back</button>
+      <button class="btn-primary" data-go="sustain">Next<svg class="w-5 h-5"><use href="#i-arr-right"/></svg></button>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================ CERTIFICATES ============================= -->
+<section id="scr-certificates" class="screen flex-col flex-1 min-h-0">
+  <header class="shrink-0 bg-page px-5 pb-3 flex items-center gap-2">
+    <button class="iconbtn -ml-3" data-go="compliance" aria-label="Back"><svg class="w-6 h-6"><use href="#i-back"/></svg></button>
+    <h1 class="text-[20px] font-semibold flex-1 text-center truncate">Certificates</h1>
+    <button class="iconbtn -mr-3" aria-label="Help"><svg class="w-6 h-6"><use href="#i-help"/></svg></button>
+  </header>
+
+  <div class="flex-1 min-h-0 overflow-y-auto scroll-area px-5 pb-8">
+    <div class="card p-4 flex items-center gap-4">
+      <div class="flex-1">
+        <p class="t-card">4 of 5 uploaded</p>
+        <p class="t-sec mt-0.5">One certificate expires soon.</p>
+      </div>
+      <span class="text-[22px] font-semibold text-ink tnum">80%</span>
+    </div>
+
+    <h2 class="t-section mt-8 mb-3">Your certificates</h2>
+    <div class="space-y-3">
+      <!-- Verified: badge is always top-right, always the same shape -->
+      <a href="#" data-go="gots" class="card p-4 hover:bg-page transition-colors block">
+        <div class="flex items-start gap-3.5">
+          <span class="tile bg-ok-tint text-ok"><svg class="w-[22px] h-[22px]"><use href="#i-shield"/></svg></span>
+          <span class="flex-1 min-w-0">
+            <span class="block t-card">GOTS</span>
+            <span class="block t-sec">Global Organic Textile Standard</span>
+          </span>
+          <span class="chip-ok h-7 shrink-0"><svg class="w-3.5 h-3.5"><use href="#i-check"/></svg>Verified</span>
+        </div>
+        <div class="flex items-center gap-2 mt-3 pt-3 border-t border-line">
+          <svg class="w-4 h-4 text-warn shrink-0"><use href="#i-clock"/></svg>
+          <span class="t-meta text-warn">Expires in 28 days · 14 Mar 2026</span>
+          <svg class="w-5 h-5 text-ink-3 ml-auto"><use href="#i-right"/></svg>
+        </div>
+      </a>
+
+      <a href="#" class="card p-4 hover:bg-page transition-colors block">
+        <div class="flex items-start gap-3.5">
+          <span class="tile bg-ok-tint text-ok"><svg class="w-[22px] h-[22px]"><use href="#i-shield"/></svg></span>
+          <span class="flex-1 min-w-0">
+            <span class="block t-card">OEKO-TEX Standard 100</span>
+            <span class="block t-sec">Tested for harmful substances</span>
+          </span>
+          <span class="chip-ok h-7 shrink-0"><svg class="w-3.5 h-3.5"><use href="#i-check"/></svg>Verified</span>
+        </div>
+        <div class="flex items-center gap-2 mt-3 pt-3 border-t border-line">
+          <svg class="w-4 h-4 text-ink-3 shrink-0"><use href="#i-calendar"/></svg>
+          <span class="t-meta">Valid until 30 Sep 2027</span>
+          <svg class="w-5 h-5 text-ink-3 ml-auto"><use href="#i-right"/></svg>
+        </div>
+      </a>
+
+      <a href="#" class="card p-4 hover:bg-page transition-colors block">
+        <div class="flex items-start gap-3.5">
+          <span class="tile bg-ok-tint text-ok"><svg class="w-[22px] h-[22px]"><use href="#i-shield"/></svg></span>
+          <span class="flex-1 min-w-0">
+            <span class="block t-card">Handloom Mark</span>
+            <span class="block t-sec">Government of India</span>
+          </span>
+          <span class="chip-ok h-7 shrink-0"><svg class="w-3.5 h-3.5"><use href="#i-check"/></svg>Verified</span>
+        </div>
+        <div class="flex items-center gap-2 mt-3 pt-3 border-t border-line">
+          <svg class="w-4 h-4 text-ink-3 shrink-0"><use href="#i-calendar"/></svg>
+          <span class="t-meta">Valid until 11 Jun 2028</span>
+          <svg class="w-5 h-5 text-ink-3 ml-auto"><use href="#i-right"/></svg>
+        </div>
+      </a>
+
+      <a href="#" class="card p-4 hover:bg-page transition-colors block">
+        <div class="flex items-start gap-3.5">
+          <span class="tile bg-muted-tint text-ink-2"><svg class="w-[22px] h-[22px]"><use href="#i-clock"/></svg></span>
+          <span class="flex-1 min-w-0">
+            <span class="block t-card">Fairtrade</span>
+            <span class="block t-sec">Uploaded 2 days ago</span>
+          </span>
+          <span class="chip-warn h-7 shrink-0"><svg class="w-3.5 h-3.5"><use href="#i-clock"/></svg>Checking</span>
+        </div>
+        <div class="flex items-center gap-2 mt-3 pt-3 border-t border-line">
+          <svg class="w-4 h-4 text-ink-3 shrink-0"><use href="#i-info"/></svg>
+          <span class="t-meta">Usually checked within 2 working days</span>
+        </div>
+      </a>
+    </div>
+
+    <h2 class="t-section mt-8 mb-3">Suggested for your product</h2>
+    <div class="card p-4 flex items-center gap-3.5">
+      <span class="tile bg-muted-tint text-ink-3"><svg class="w-[22px] h-[22px]"><use href="#i-file"/></svg></span>
+      <span class="flex-1 min-w-0">
+        <span class="block t-body font-medium">REACH declaration</span>
+        <span class="block t-sec">Needed for buyers in the EU</span>
+      </span>
+      <button class="btn-third min-h-[44px] px-3 text-[15px]">Add</button>
+    </div>
+
+    <button class="btn-primary w-full mt-6">
+      <svg class="w-5 h-5"><use href="#i-upload"/></svg>Upload certificate
+    </button>
+  </div>
+</section>
+
+
+<!-- ========================== GOTS CERTIFICATE =========================== -->
+<section id="scr-gots" class="screen flex-col flex-1 min-h-0">
+  <header class="shrink-0 bg-page px-5 pb-3 flex items-center gap-2">
+    <button class="iconbtn -ml-3" data-go="certificates" aria-label="Back"><svg class="w-6 h-6"><use href="#i-back"/></svg></button>
+    <h1 class="text-[20px] font-semibold flex-1 text-center truncate">GOTS certificate</h1>
+    <button class="iconbtn -mr-3" aria-label="Download certificate"><svg class="w-6 h-6"><use href="#i-download"/></svg></button>
+  </header>
+
+  <div class="flex-1 min-h-0 overflow-y-auto scroll-area px-5 pb-8">
+    <div class="card p-5 text-center">
+      <span class="w-16 h-16 mx-auto rounded-full bg-ok-tint text-ok grid place-items-center"><svg class="w-8 h-8"><use href="#i-shield"/></svg></span>
+      <h2 class="t-section mt-3">Global Organic Textile Standard</h2>
+      <p class="t-sec mt-1">Certifies organic fibre content and responsible processing.</p>
+      <span class="chip-ok mt-3"><svg class="w-4 h-4"><use href="#i-check"/></svg>Verified by Control Union</span>
+    </div>
+
+    <!-- Expiry gets amber, and it gets its own row so it can't be missed -->
+    <div class="notice bg-warn-tint text-ink mt-3">
+      <svg class="w-5 h-5 shrink-0 text-warn mt-0.5"><use href="#i-clock"/></svg>
+      <p><span class="font-semibold">Expires in 28 days.</span> Renew before 14 March 2026 to keep your passport published.</p>
+    </div>
+
+    <h2 class="t-section mt-8 mb-3">Certificate details</h2>
+    <dl class="card divide-row">
+      <div class="flex items-center gap-4 p-4"><dt class="t-sec w-[42%] shrink-0">Certificate number</dt><dd class="t-body font-medium flex-1 tnum">GOTS-2024-8841</dd></div>
+      <div class="flex items-center gap-4 p-4"><dt class="t-sec w-[42%] shrink-0">Issued by</dt><dd class="t-body font-medium flex-1">Control Union</dd></div>
+      <div class="flex items-center gap-4 p-4"><dt class="t-sec w-[42%] shrink-0">Issued on</dt><dd class="t-body font-medium flex-1">15 Mar 2024</dd></div>
+      <div class="flex items-center gap-4 p-4"><dt class="t-sec w-[42%] shrink-0">Valid until</dt><dd class="t-body font-medium flex-1 text-warn">14 Mar 2026</dd></div>
+      <div class="flex items-center gap-4 p-4"><dt class="t-sec w-[42%] shrink-0">Scope</dt><dd class="t-body font-medium flex-1">Organic cotton, 70%</dd></div>
+    </dl>
+
+    <h2 class="t-section mt-8 mb-3">Applies to</h2>
+    <div class="card divide-row">
+      <div class="flex items-center gap-3 p-4">
+        <span data-thumb="indigo"></span>
+        <span class="flex-1 min-w-0"><span class="block t-body font-medium">Handwoven Cotton Throw</span><span class="block t-meta tnum">HCT-IND-001</span></span>
+      </div>
+      <div class="flex items-center gap-3 p-4">
+        <span data-thumb="natural"></span>
+        <span class="flex-1 min-w-0"><span class="block t-body font-medium">Handwoven Table Runner</span><span class="block t-meta tnum">HTR-NAT-002</span></span>
+      </div>
+    </div>
+
+    <h2 class="t-section mt-8 mb-3">File</h2>
+    <div class="card p-3.5 flex items-center gap-3">
+      <span class="tile bg-muted-tint text-ink-2"><svg class="w-[22px] h-[22px]"><use href="#i-file"/></svg></span>
+      <span class="flex-1 min-w-0">
+        <span class="block t-body font-medium truncate">GOTS-2024-8841.pdf</span>
+        <span class="block t-meta tnum">1.2 MB · uploaded 18 Mar 2024</span>
+      </span>
+      <button class="iconbtn -mr-1" aria-label="Download file"><svg class="w-5 h-5"><use href="#i-download"/></svg></button>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 mt-8">
+      <button class="btn-quiet">Replace</button>
+      <button class="btn-primary">Renew now</button>
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================ TRACEABILITY ============================= -->
+<section id="scr-traceability" class="screen flex-col flex-1 min-h-0">
+  <header class="shrink-0 bg-page px-5 pb-3 flex items-center gap-2">
+    <button class="iconbtn -ml-3" data-go="builder" aria-label="Back"><svg class="w-6 h-6"><use href="#i-back"/></svg></button>
+    <h1 class="text-[20px] font-semibold flex-1 text-center truncate">Traceability</h1>
+    <button class="iconbtn -mr-3" aria-label="Help"><svg class="w-6 h-6"><use href="#i-help"/></svg></button>
+  </header>
+
+  <div data-stepper="4" class="shrink-0"></div>
+
+  <div class="flex-1 min-h-0 overflow-y-auto scroll-area px-5 pb-8">
+    <div class="card p-4">
+      <div class="flex items-center justify-between mb-2.5">
+        <p class="t-card">Supply chain traced</p>
+        <p class="text-[22px] font-semibold text-ink tnum">85%</p>
+      </div>
+      <div class="track"><i style="width:85%"></i></div>
+      <p class="t-sec mt-2.5">4 of 5 steps confirmed. Add the buyer to reach 100%.</p>
+    </div>
+
+    <div class="flex items-end justify-between mt-8 mb-3">
+      <h2 class="t-section">Supply chain journey</h2>
+      <button class="flex items-center gap-1.5 text-[14px] font-semibold text-brand tap px-2 -mr-2">
+        <svg class="w-4 h-4"><use href="#i-map"/></svg>Map
+      </button>
+    </div>
+
+    <!-- Signature: the connector is a thread. Solid where traced, open where not. -->
+    <ol class="card p-4 pl-3">
+      <li class="relative flex gap-3.5 pb-6">
+        <span class="absolute left-[13px] top-7 bottom-0 w-[2px] bg-brand" aria-hidden="true"></span>
+        <span class="w-7 h-7 shrink-0 rounded-full bg-brand text-white grid place-items-center z-10"><svg class="w-4 h-4"><use href="#i-check"/></svg></span>
+        <span class="flex-1 min-w-0">
+          <span class="flex items-start gap-2">
+            <span class="flex-1 min-w-0">
+              <span class="block t-card">Material source</span>
+              <span class="block t-sec">Organic Cotton Farm · Gujarat, India</span>
+            </span>
+            <span class="t-meta text-ink-3 shrink-0 tnum">12 Jan</span>
+          </span>
+          <span class="chip-ok h-7 mt-2"><svg class="w-3.5 h-3.5"><use href="#i-check"/></svg>Verified</span>
+        </span>
+      </li>
+      <li class="relative flex gap-3.5 pb-6">
+        <span class="absolute left-[13px] top-7 bottom-0 w-[2px] bg-brand" aria-hidden="true"></span>
+        <span class="w-7 h-7 shrink-0 rounded-full bg-brand text-white grid place-items-center z-10"><svg class="w-4 h-4"><use href="#i-check"/></svg></span>
+        <span class="flex-1 min-w-0">
+          <span class="flex items-start gap-2">
+            <span class="flex-1 min-w-0">
+              <span class="block t-card">Spinning</span>
+              <span class="block t-sec">Shree Spinners · Gujarat, India</span>
+            </span>
+            <span class="t-meta text-ink-3 shrink-0 tnum">18 Jan</span>
+          </span>
+          <span class="chip-ok h-7 mt-2"><svg class="w-3.5 h-3.5"><use href="#i-check"/></svg>Verified</span>
+        </span>
+      </li>
+      <li class="relative flex gap-3.5 pb-6">
+        <span class="absolute left-[13px] top-7 bottom-0 w-[2px] bg-brand" aria-hidden="true"></span>
+        <span class="w-7 h-7 shrink-0 rounded-full bg-brand text-white grid place-items-center z-10"><svg class="w-4 h-4"><use href="#i-check"/></svg></span>
+        <span class="flex-1 min-w-0">
+          <span class="flex items-start gap-2">
+            <span class="flex-1 min-w-0">
+              <span class="block t-card">Weaving</span>
+              <span class="block t-sec">Handloom Cluster · Jaipur, India</span>
+            </span>
+            <span class="t-meta text-ink-3 shrink-0 tnum">01 Feb</span>
+          </span>
+          <span class="chip-ok h-7 mt-2"><svg class="w-3.5 h-3.5"><use href="#i-check"/></svg>Verified</span>
+        </span>
+      </li>
+      <li class="relative flex gap-3.5 pb-6">
+        <span class="absolute left-[13px] top-7 bottom-0 w-[2px] border-l-2 border-dashed border-line-strong" aria-hidden="true"></span>
+        <span class="w-7 h-7 shrink-0 rounded-full bg-brand text-white grid place-items-center z-10"><svg class="w-4 h-4"><use href="#i-check"/></svg></span>
+        <span class="flex-1 min-w-0">
+          <span class="flex items-start gap-2">
+            <span class="flex-1 min-w-0">
+              <span class="block t-card">Export</span>
+              <span class="block t-sec">RHM Exports · Jaipur, India</span>
+            </span>
+            <span class="t-meta text-ink-3 shrink-0 tnum">10 Feb</span>
+          </span>
+          <span class="chip-ok h-7 mt-2"><svg class="w-3.5 h-3.5"><use href="#i-check"/></svg>Verified</span>
+        </span>
+      </li>
+      <li class="relative flex gap-3.5">
+        <span class="w-7 h-7 shrink-0 rounded-full bg-white border-2 border-dashed border-line-strong z-10"></span>
+        <span class="flex-1 min-w-0">
+          <span class="block t-card text-ink-2">Buyer or retailer</span>
+          <span class="block t-sec">Not added yet · Germany</span>
+          <button class="btn-third mt-2 min-h-[44px] px-3 -ml-3 text-[15px]"><svg class="w-4 h-4"><use href="#i-plus"/></svg>Add buyer</button>
+        </span>
+      </li>
+    </ol>
+
+    <h2 class="t-section mt-8 mb-3">Batch identity</h2>
+    <div class="card p-4 flex items-center gap-4">
+      <dl class="flex-1 min-w-0 space-y-2">
+        <div class="flex gap-3"><dt class="t-sec w-[38%] shrink-0">Batch</dt><dd class="t-body font-medium tnum">BATCH-HT-2402</dd></div>
+        <div class="flex gap-3"><dt class="t-sec w-[38%] shrink-0">Product code</dt><dd class="t-body font-medium tnum">HCT-IND-001</dd></div>
+      </dl>
+      <button data-go="qr" class="shrink-0 text-center" aria-label="View QR code">
+        <span data-qr="56" class="block"></span>
+        <span class="block t-meta text-brand mt-1.5">View QR</span>
+      </button>
+    </div>
+
+    <div class="notice bg-brand-tint text-ink mt-6">
+      <svg class="w-5 h-5 shrink-0 text-brand mt-0.5"><use href="#i-info"/></svg>
+      <p>Add your buyer to complete the journey. A fully traced product is more valuable to EU buyers.</p>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 mt-6">
+      <button class="btn-quiet" data-go="production"><svg class="w-5 h-5"><use href="#i-arr-left"/></svg>Back</button>
+      <button class="btn-primary" data-go="compliance">Next<svg class="w-5 h-5"><use href="#i-arr-right"/></svg></button>
+    </div>
+  </div>
+</section>
+
+
+<!-- =========================== SUSTAINABILITY =========================== -->
+<section id="scr-sustain" class="screen flex-col flex-1 min-h-0">
+  <header class="shrink-0 bg-page px-5 pb-3 flex items-center gap-2">
+    <button class="iconbtn -ml-3" data-go="builder" aria-label="Back"><svg class="w-6 h-6"><use href="#i-back"/></svg></button>
+    <h1 class="text-[20px] font-semibold flex-1 text-center truncate">Sustainability</h1>
+    <button class="iconbtn -mr-3" aria-label="Help"><svg class="w-6 h-6"><use href="#i-help"/></svg></button>
+  </header>
+
+  <div data-stepper="6" class="shrink-0"></div>
+
+  <div class="flex-1 min-h-0 overflow-y-auto scroll-area px-5 pb-8">
+    <div class="card p-4">
+      <div class="flex items-center gap-3.5">
+        <span class="tile bg-brand-tint text-brand"><svg class="w-[22px] h-[22px]"><use href="#i-leaf"/></svg></span>
+        <div class="flex-1 min-w-0">
+          <p class="t-card">Sustainability score</p>
+          <p class="t-sec mt-0.5">Good start. There's room to improve.</p>
+        </div>
+        <p class="text-[26px] font-semibold text-ink tnum shrink-0">72</p>
+      </div>
+      <div class="track mt-3"><i style="width:72%"></i></div>
+    </div>
+
+    <!-- Tints are bound to metric categories permanently, so they carry meaning -->
+    <h2 class="t-section mt-8 mb-3">Environmental impact</h2>
+    <div class="grid grid-cols-3 gap-2.5">
+      <div class="card p-3.5 text-center">
+        <span class="w-10 h-10 mx-auto rounded-full bg-muted-tint text-ink-2 grid place-items-center"><svg class="w-5 h-5"><use href="#i-cloud"/></svg></span>
+        <p class="t-meta mt-2">Carbon</p>
+        <p class="text-[19px] leading-6 font-semibold text-ink tnum mt-0.5">12.4<span class="text-[13px] font-medium text-ink-2">kg</span></p>
+        <span class="chip-ok h-6 mt-2 text-[11px] px-2">Low</span>
+      </div>
+      <div class="card p-3.5 text-center">
+        <span class="w-10 h-10 mx-auto rounded-full bg-info-tint text-info grid place-items-center"><svg class="w-5 h-5"><use href="#i-drop"/></svg></span>
+        <p class="t-meta mt-2">Water</p>
+        <p class="text-[19px] leading-6 font-semibold text-ink tnum mt-0.5">320<span class="text-[13px] font-medium text-ink-2">L</span></p>
+        <span class="chip-warn h-6 mt-2 text-[11px] px-2">Medium</span>
+      </div>
+      <div class="card p-3.5 text-center">
+        <span class="w-10 h-10 mx-auto rounded-full bg-warn-tint text-warn grid place-items-center"><svg class="w-5 h-5"><use href="#i-bolt"/></svg></span>
+        <p class="t-meta mt-2">Renewable</p>
+        <p class="text-[19px] leading-6 font-semibold text-ink tnum mt-0.5">85<span class="text-[13px] font-medium text-ink-2">%</span></p>
+        <span class="chip-ok h-6 mt-2 text-[11px] px-2">Good</span>
+      </div>
+    </div>
+
+    <h2 class="t-section mt-8 mb-3">How long it lasts</h2>
+    <div class="card divide-row">
+      <div class="flex items-center gap-3.5 p-4">
+        <span class="tile bg-muted-tint text-ink-2"><svg class="w-[22px] h-[22px]"><use href="#i-shield"/></svg></span>
+        <span class="flex-1 min-w-0"><span class="block t-body font-medium">Expected lifespan</span><span class="block t-sec">With normal use</span></span>
+        <span class="text-[18px] font-semibold text-ink tnum shrink-0">3+ yrs</span>
+      </div>
+      <div class="flex items-center gap-3.5 p-4">
+        <span class="tile bg-muted-tint text-ink-2"><svg class="w-[22px] h-[22px]"><use href="#i-loom"/></svg></span>
+        <span class="flex-1 min-w-0"><span class="block t-body font-medium">Durability</span><span class="block t-sec">Handwoven construction</span></span>
+        <span class="chip-ok h-7 shrink-0">High</span>
+      </div>
+    </div>
+
+    <h2 class="t-section mt-8 mb-3">End of life</h2>
+    <div class="card divide-row">
+      <div class="flex items-center gap-3.5 p-4">
+        <span class="tile bg-muted-tint text-ink-2"><svg class="w-[22px] h-[22px]"><use href="#i-recycle"/></svg></span>
+        <span class="flex-1 min-w-0"><span class="block t-body font-medium">Recycled content</span><span class="block t-sec">By weight</span></span>
+        <span class="text-[18px] font-semibold text-ink tnum shrink-0">35%</span>
+      </div>
+      <div class="flex items-center gap-3.5 p-4">
+        <span class="tile bg-muted-tint text-ink-2"><svg class="w-[22px] h-[22px]"><use href="#i-wrench"/></svg></span>
+        <span class="flex-1 min-w-0"><span class="block t-body font-medium">Repairability</span><span class="block t-sec">Can be mended by hand</span></span>
+        <span class="chip-warn h-7 shrink-0">Medium</span>
+      </div>
+      <div class="flex items-center gap-3.5 p-4">
+        <span class="tile bg-muted-tint text-ink-2"><svg class="w-[22px] h-[22px]"><use href="#i-refresh"/></svg></span>
+        <span class="flex-1 min-w-0"><span class="block t-body font-medium">Recyclability</span><span class="block t-sec">Natural fibres, no blends</span></span>
+        <span class="chip-ok h-7 shrink-0">High</span>
+      </div>
+    </div>
+
+    <div class="notice bg-brand-tint text-ink mt-6">
+      <svg class="w-5 h-5 shrink-0 text-brand mt-0.5"><use href="#i-leaf"/></svg>
+      <p>Raising recycled content and repairability would lift your score the most.</p>
+    </div>
+
+    <div class="grid grid-cols-2 gap-3 mt-6">
+      <button class="btn-quiet" data-go="compliance"><svg class="w-5 h-5"><use href="#i-arr-left"/></svg>Back</button>
+      <button class="btn-primary" data-go="review">Next<svg class="w-5 h-5"><use href="#i-arr-right"/></svg></button>
+    </div>
+  </div>
+</section>
+
+
+<!-- ========================== SUPPLIER REQUEST =========================== -->
+<section id="scr-supplier" class="screen flex-col flex-1 min-h-0">
+  <header class="shrink-0 bg-page px-5 pb-3 flex items-center gap-2">
+    <button class="iconbtn -ml-3" data-go="materials" aria-label="Back"><svg class="w-6 h-6"><use href="#i-back"/></svg></button>
+    <h1 class="text-[20px] font-semibold flex-1 text-center truncate">Supplier requests</h1>
+    <button class="iconbtn -mr-3" aria-label="Help"><svg class="w-6 h-6"><use href="#i-help"/></svg></button>
+  </header>
+
+  <div class="flex-1 min-h-0 overflow-y-auto scroll-area px-5 pb-8">
+    <p class="t-body text-ink-2 mb-5">Ask a supplier for the information you need. They get a link and fill it in — no account required.</p>
+
+    <h2 class="t-section mb-3">Open requests</h2>
+    <div class="space-y-3">
+      <div class="card p-4">
+        <div class="flex items-start gap-3.5">
+          <span class="tile bg-muted-tint text-ink-2"><svg class="w-[22px] h-[22px]"><use href="#i-users"/></svg></span>
+          <span class="flex-1 min-w-0">
+            <span class="block t-card">Shree Spinners</span>
+            <span class="block t-sec">Organic cotton yarn · sent 3 days ago</span>
+          </span>
+          <span class="chip-warn h-7 shrink-0"><svg class="w-3.5 h-3.5"><use href="#i-clock"/></svg>Waiting</span>
+        </div>
+        <p class="t-sec mt-3 pt-3 border-t border-line">Asked for: GOTS certificate, batch number</p>
+        <div class="grid grid-cols-2 gap-2.5 mt-3">
+          <button class="btn-quiet min-h-[44px] text-[15px]">Copy link</button>
+          <button class="btn-second min-h-[44px] text-[15px]"><svg class="w-4 h-4"><use href="#i-send"/></svg>Remind</button>
+        </div>
+      </div>
+
+      <div class="card p-4">
+        <div class="flex items-start gap-3.5">
+          <span class="tile bg-muted-tint text-ink-2"><svg class="w-[22px] h-[22px]"><use href="#i-users"/></svg></span>
+          <span class="flex-1 min-w-0">
+            <span class="block t-card">Neel Naturals</span>
+            <span class="block t-sec">Natural indigo dye · sent 9 days ago</span>
+          </span>
+          <span class="chip-risk h-7 shrink-0"><svg class="w-3.5 h-3.5"><use href="#i-alert"/></svg>Overdue</span>
+        </div>
+        <p class="t-sec mt-3 pt-3 border-t border-line">Asked for: dye safety sheet</p>
+        <div class="grid grid-cols-2 gap-2.5 mt-3">
+          <button class="btn-quiet min-h-[44px] text-[15px]">Copy link</button>
+          <button class="btn-second min-h-[44px] text-[15px]"><svg class="w-4 h-4"><use href="#i-send"/></svg>Remind</button>
+        </div>
+      </div>
+    </div>
+
+    <h2 class="t-section mt-8 mb-3">Completed</h2>
+    <div class="card divide-row">
+      <div class="flex items-center gap-3.5 p-4">
+        <span class="tile bg-ok-tint text-ok"><svg class="w-[22px] h-[22px]"><use href="#i-check-c"/></svg></span>
+        <span class="flex-1 min-w-0"><span class="block t-body font-medium">Shree Organics</span><span class="block t-sec">Replied 12 Jan</span></span>
+        <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+      </div>
+      <div class="flex items-center gap-3.5 p-4">
+        <span class="tile bg-ok-tint text-ok"><svg class="w-[22px] h-[22px]"><use href="#i-check-c"/></svg></span>
+        <span class="flex-1 min-w-0"><span class="block t-body font-medium">Reweave Mills</span><span class="block t-sec">Replied 04 Feb</span></span>
+        <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+      </div>
+    </div>
+
+    <button class="btn-primary w-full mt-6"><svg class="w-5 h-5"><use href="#i-plus"/></svg>New request</button>
+  </div>
+
+  <div data-tabbar="requests"></div>
+</section>
+
+<!-- ====================== VISIBILITY & ACCESS CONTROL ==================== -->
+<section id="scr-visibility" class="screen flex-col flex-1 min-h-0">
+  <header class="shrink-0 bg-page px-5 pb-3 flex items-center gap-2">
+    <button class="iconbtn -ml-3" data-go="review" aria-label="Back"><svg class="w-6 h-6"><use href="#i-back"/></svg></button>
+    <h1 class="text-[20px] font-semibold flex-1 text-center truncate">Who can see what</h1>
+    <button class="iconbtn -mr-3" aria-label="Help"><svg class="w-6 h-6"><use href="#i-help"/></svg></button>
+  </header>
+
+  <div class="flex-1 min-h-0 overflow-y-auto scroll-area px-5 pb-8">
+    <div class="card p-4 flex items-start gap-3.5">
+      <span class="tile bg-brand-tint text-brand"><svg class="w-[22px] h-[22px]"><use href="#i-lock"/></svg></span>
+      <div class="flex-1 min-w-0">
+        <p class="t-card">Private by default</p>
+        <p class="t-sec mt-1">You decide what each group can see. Nobody can edit your passport but you.</p>
+      </div>
+    </div>
+
+    <h2 class="t-section mt-8 mb-1">Access layers</h2>
+    <p class="t-sec mb-3">Each layer builds on the one above it.</p>
+
+    <div class="space-y-3">
+      <div class="card">
+        <div class="p-4 flex items-start gap-3.5">
+          <span class="tile bg-muted-tint text-ink-2"><svg class="w-[22px] h-[22px]"><use href="#i-globe"/></svg></span>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <p class="t-card">Public</p>
+              <span class="chip-mute h-7">Anyone</span>
+            </div>
+            <p class="t-sec mt-1">Anyone who scans the QR code. Consumer-friendly information only.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 px-4 py-3 border-t border-line">
+          <svg class="w-4 h-4 text-ink-3 shrink-0"><use href="#i-eye"/></svg>
+          <span class="t-meta flex-1">Product name, materials, care, origin country</span>
+          <svg class="w-5 h-5 text-ink-3"><use href="#i-down"/></svg>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="p-4 flex items-start gap-3.5">
+          <span class="tile bg-muted-tint text-ink-2"><svg class="w-[22px] h-[22px]"><use href="#i-users"/></svg></span>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <p class="t-card">Buyers</p>
+              <span class="chip-mute h-7">Signed in</span>
+            </div>
+            <p class="t-sec mt-1">Verified buyers you have shared the passport with.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 px-4 py-3 border-t border-line">
+          <svg class="w-4 h-4 text-ink-3 shrink-0"><use href="#i-eye"/></svg>
+          <span class="t-meta flex-1">Everything public, plus supplier and batch details</span>
+          <svg class="w-5 h-5 text-ink-3"><use href="#i-down"/></svg>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="p-4 flex items-start gap-3.5">
+          <span class="tile bg-muted-tint text-ink-2"><svg class="w-[22px] h-[22px]"><use href="#i-shield"/></svg></span>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <p class="t-card">Verifiers</p>
+              <span class="chip-mute h-7">Approved partners</span>
+            </div>
+            <p class="t-sec mt-1">Partners you have approved to check your claims.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 px-4 py-3 border-t border-line">
+          <svg class="w-4 h-4 text-ink-3 shrink-0"><use href="#i-eye"/></svg>
+          <span class="t-meta flex-1">Everything above, plus compliance evidence</span>
+          <svg class="w-5 h-5 text-ink-3"><use href="#i-down"/></svg>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="p-4 flex items-start gap-3.5">
+          <span class="tile bg-muted-tint text-ink-2"><svg class="w-[22px] h-[22px]"><use href="#i-file"/></svg></span>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2 flex-wrap">
+              <p class="t-card">Regulators</p>
+              <span class="chip-mute h-7">Authorities</span>
+            </div>
+            <p class="t-sec mt-1">Full access for regulatory oversight and audits.</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 px-4 py-3 border-t border-line">
+          <svg class="w-4 h-4 text-ink-3 shrink-0"><use href="#i-eye"/></svg>
+          <span class="t-meta flex-1">Everything in the passport</span>
+          <svg class="w-5 h-5 text-ink-3"><use href="#i-down"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="notice bg-muted-tint text-ink mt-6">
+      <svg class="w-5 h-5 shrink-0 text-ink-2 mt-0.5"><use href="#i-lock"/></svg>
+      <p>Every layer is read-only. No one outside your business can change your data.</p>
+    </div>
+
+    <button class="btn-primary w-full mt-6" data-go="review">Save and continue</button>
+  </div>
+</section>
+
+
+<!-- =========================== REVIEW & PUBLISH ========================== -->
+<section id="scr-review" class="screen flex-col flex-1 min-h-0">
+  <header class="shrink-0 bg-page px-5 pb-3 flex items-center gap-2">
+    <button class="iconbtn -ml-3" data-go="builder" aria-label="Back"><svg class="w-6 h-6"><use href="#i-back"/></svg></button>
+    <h1 class="text-[20px] font-semibold flex-1 text-center truncate">Review &amp; publish</h1>
+    <button class="iconbtn -mr-3" aria-label="Help"><svg class="w-6 h-6"><use href="#i-info"/></svg></button>
+  </header>
+
+  <div data-stepper="7" class="shrink-0"></div>
+
+  <div class="flex-1 min-h-0 overflow-y-auto scroll-area px-5 pb-8">
+    <!-- Signature weave appears on passport-identity surfaces only -->
+    <div class="card weave p-4 overflow-hidden">
+      <div class="flex items-center gap-3.5 relative">
+        <span data-thumb="indigo:lg"></span>
+        <span class="flex-1 min-w-0">
+          <span class="block t-card">Handwoven Cotton Throw — Indigo</span>
+          <span class="block t-meta tnum mt-0.5">HCT-IND-001</span>
+          <span class="chip-ok h-7 mt-2"><svg class="w-3.5 h-3.5"><use href="#i-check"/></svg>Ready to publish</span>
+        </span>
+      </div>
+      <div class="flex items-baseline justify-between mt-4 mb-2 relative">
+        <p class="t-meta">Passport readiness</p>
+        <p class="text-[24px] font-semibold text-ink tnum">92%</p>
+      </div>
+      <div class="track relative"><i style="width:92%"></i></div>
+    </div>
+
+    <h2 class="t-section mt-8 mb-3">Section status</h2>
+    <div class="card divide-row">
+      <div class="flex items-center gap-3 p-4">
+        <svg class="w-5 h-5 text-ok shrink-0"><use href="#i-check-c"/></svg>
+        <span class="flex-1 t-body font-medium">Product basics</span>
+        <span class="text-[15px] font-semibold text-ink tnum">100%</span>
+        <svg class="w-5 h-5 text-ink-3"><use href="#i-right"/></svg>
+      </div>
+      <div class="flex items-center gap-3 p-4">
+        <svg class="w-5 h-5 text-ok shrink-0"><use href="#i-check-c"/></svg>
+        <span class="flex-1 t-body font-medium">Materials</span>
+        <span class="text-[15px] font-semibold text-ink tnum">100%</span>
+        <svg class="w-5 h-5 text-ink-3"><use href="#i-right"/></svg>
+      </div>
+      <div class="flex items-center gap-3 p-4">
+        <svg class="w-5 h-5 text-ok shrink-0"><use href="#i-check-c"/></svg>
+        <span class="flex-1 t-body font-medium">Production</span>
+        <span class="text-[15px] font-semibold text-ink tnum">90%</span>
+        <svg class="w-5 h-5 text-ink-3"><use href="#i-right"/></svg>
+      </div>
+      <div class="flex items-center gap-3 p-4">
+        <svg class="w-5 h-5 text-ok shrink-0"><use href="#i-check-c"/></svg>
+        <span class="flex-1 t-body font-medium">Compliance</span>
+        <span class="text-[15px] font-semibold text-ink tnum">85%</span>
+        <svg class="w-5 h-5 text-ink-3"><use href="#i-right"/></svg>
+      </div>
+      <div class="flex items-center gap-3 p-4">
+        <svg class="w-5 h-5 text-ok shrink-0"><use href="#i-check-c"/></svg>
+        <span class="flex-1 t-body font-medium">Traceability</span>
+        <span class="text-[15px] font-semibold text-ink tnum">80%</span>
+        <svg class="w-5 h-5 text-ink-3"><use href="#i-right"/></svg>
+      </div>
+      <div class="flex items-center gap-3 p-4">
+        <svg class="w-5 h-5 text-ok shrink-0"><use href="#i-check-c"/></svg>
+        <span class="flex-1 t-body font-medium">Sustainability</span>
+        <span class="text-[15px] font-semibold text-ink tnum">75%</span>
+        <svg class="w-5 h-5 text-ink-3"><use href="#i-right"/></svg>
+      </div>
+    </div>
+
+    <h2 class="t-section mt-8 mb-3">Verification</h2>
+    <div class="card divide-row">
+      <div class="flex items-center gap-3.5 p-4">
+        <span class="tile bg-ok-tint text-ok"><svg class="w-[22px] h-[22px]"><use href="#i-shield"/></svg></span>
+        <span class="flex-1 t-body font-medium">Materials verified</span>
+        <span class="text-[16px] font-semibold text-ink tnum">100%</span>
+      </div>
+      <div class="flex items-center gap-3.5 p-4">
+        <span class="tile bg-warn-tint text-warn"><svg class="w-[22px] h-[22px]"><use href="#i-file"/></svg></span>
+        <span class="flex-1 t-body font-medium">Compliance verified</span>
+        <span class="text-[16px] font-semibold text-warn tnum">85%</span>
+      </div>
+      <div class="flex items-center gap-3.5 p-4">
+        <span class="tile bg-warn-tint text-warn"><svg class="w-[22px] h-[22px]"><use href="#i-users"/></svg></span>
+        <span class="flex-1 t-body font-medium">Supplier data</span>
+        <span class="chip-warn h-7 tnum">2 pending</span>
+      </div>
+    </div>
+
+    <a href="#" data-go="visibility" class="card p-4 flex items-center gap-3.5 mt-3 hover:bg-page transition-colors">
+      <span class="tile bg-muted-tint text-ink-2"><svg class="w-[22px] h-[22px]"><use href="#i-lock"/></svg></span>
+      <span class="flex-1 min-w-0"><span class="block t-body font-medium">Who can see what</span><span class="block t-sec">Public passport, buyers, verifiers</span></span>
+      <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+    </a>
+
+    <a href="#" class="card p-4 flex items-center gap-3.5 mt-3 hover:bg-page transition-colors">
+      <span class="tile bg-muted-tint text-ink-2"><svg class="w-[22px] h-[22px]"><use href="#i-eye"/></svg></span>
+      <span class="flex-1 min-w-0"><span class="block t-body font-medium">Preview passport</span><span class="block t-sec">See what buyers will see</span></span>
+      <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+    </a>
+
+    <button class="btn-primary w-full mt-6" data-go="created">
+      <svg class="w-5 h-5"><use href="#i-rocket"/></svg>Publish passport
+    </button>
+    <p class="flex items-start gap-2 t-meta text-ink-3 mt-3 px-1">
+      <svg class="w-4 h-4 shrink-0 mt-0.5"><use href="#i-lock"/></svg>
+      Once published, this passport is permanent and shareable. You can still add information later.
+    </p>
+  </div>
+</section>
+
+
+<!-- ========================== PASSPORT CREATED =========================== -->
+<section id="scr-created" class="screen flex-col flex-1 min-h-0">
+  <header class="shrink-0 bg-page px-5 pb-3 flex items-center gap-2">
+    <button class="iconbtn -ml-3" data-go="products" aria-label="Close"><svg class="w-6 h-6"><use href="#i-x"/></svg></button>
+    <h1 class="text-[20px] font-semibold flex-1 text-center truncate">Passport published</h1>
+    <span class="w-12 shrink-0"></span>
+  </header>
+
+  <div class="flex-1 min-h-0 overflow-y-auto scroll-area px-5 pb-8">
+    <div class="card weave p-6 text-center overflow-hidden">
+      <span class="relative w-16 h-16 mx-auto rounded-full bg-brand text-white grid place-items-center">
+        <svg class="w-9 h-9"><use href="#i-check"/></svg>
+      </span>
+      <h2 class="t-section mt-4 relative">Your passport is live</h2>
+      <p class="t-body text-ink-2 mt-1.5 relative">Buyers can now scan the code and see how this product was made.</p>
+    </div>
+
+    <h2 class="t-section mt-8 mb-3">Passport details</h2>
+    <dl class="card divide-row">
+      <div class="flex items-center gap-4 p-4">
+        <dt class="t-sec w-[38%] shrink-0">Passport ID</dt>
+        <dd class="t-body font-medium flex-1 tnum truncate">DPP-IND-TXT-000124</dd>
+        <button class="iconbtn -mr-2" aria-label="Copy passport ID"><svg class="w-5 h-5"><use href="#i-file"/></svg></button>
+      </div>
+      <div class="flex items-center gap-4 p-4"><dt class="t-sec w-[38%] shrink-0">Version</dt><dd class="t-body font-medium flex-1 tnum">1.0</dd></div>
+      <div class="flex items-center gap-4 p-4"><dt class="t-sec w-[38%] shrink-0">Published</dt><dd class="t-body font-medium flex-1">12 May 2026, 10:30</dd></div>
+      <div class="flex items-center gap-4 p-4"><dt class="t-sec w-[38%] shrink-0">Status</dt><dd class="flex-1"><span class="chip-ok h-7"><svg class="w-3.5 h-3.5"><use href="#i-check-c"/></svg>Published</span></dd></div>
+    </dl>
+
+    <h2 class="t-section mt-8 mb-3">Share it</h2>
+    <div class="card divide-row">
+      <div class="flex items-center gap-3.5 p-4">
+        <span class="tile bg-muted-tint text-ink-2"><svg class="w-[22px] h-[22px]"><use href="#i-globe"/></svg></span>
+        <span class="flex-1 min-w-0">
+          <span class="block t-body font-medium">Public page</span>
+          <span class="block t-meta truncate tnum">dpp.rhm.org/p/DPP-IND-TXT-000124</span>
+        </span>
+        <button class="iconbtn -mr-2" aria-label="Copy public link"><svg class="w-5 h-5"><use href="#i-link"/></svg></button>
+      </div>
+      <a href="#" data-go="qr" class="flex items-center gap-3.5 p-4 hover:bg-page transition-colors">
+        <span class="tile bg-muted-tint text-ink-2"><svg class="w-[22px] h-[22px]"><use href="#i-qr"/></svg></span>
+        <span class="flex-1 min-w-0">
+          <span class="block t-body font-medium">QR code</span>
+          <span class="block t-sec">Print it on your label or tag</span>
+        </span>
+        <svg class="w-5 h-5 text-ink-3 shrink-0"><use href="#i-right"/></svg>
+      </a>
+    </div>
+
+    <button class="btn-primary w-full mt-6" data-go="qr">Get the QR code</button>
+    <button class="btn-quiet w-full mt-3" data-go="products">Back to products</button>
+  </div>
+</section>
+
+
+<!-- ============================== QR CODE =============================== -->
+<section id="scr-qr" class="screen flex-col flex-1 min-h-0">
+  <header class="shrink-0 bg-page px-5 pb-3 flex items-center gap-2">
+    <button class="iconbtn -ml-3" data-go="created" aria-label="Back"><svg class="w-6 h-6"><use href="#i-back"/></svg></button>
+    <h1 class="text-[20px] font-semibold flex-1 text-center truncate">QR code</h1>
+    <button class="iconbtn -mr-3" aria-label="Download"><svg class="w-6 h-6"><use href="#i-download"/></svg></button>
+  </header>
+
+  <div class="flex-1 min-h-0 overflow-y-auto scroll-area px-5 pb-8">
+    <div class="card weave p-6 text-center overflow-hidden">
+      <p class="t-section relative">Scan to view this passport</p>
+      <p class="t-sec mt-1 relative">Anyone can scan this — no app needed.</p>
+      <div class="relative mt-5 inline-block p-4 bg-white rounded-lg shadow-e2">
+        <span data-qr="180" class="block"></span>
+      </div>
+      <p class="t-meta tnum mt-4 relative">DPP-IND-TXT-000124</p>
+    </div>
+
+    <h2 class="t-section mt-8 mb-3">Download &amp; share</h2>
+    <div class="grid grid-cols-2 gap-3">
+      <button class="card p-4 flex flex-col items-center gap-2 hover:bg-page transition-colors">
+        <span class="tile bg-muted-tint text-ink-2"><svg class="w-[22px] h-[22px]"><use href="#i-download"/></svg></span>
+        <span class="t-body font-medium">PNG</span>
+        <span class="t-meta text-ink-3">For screens</span>
+      </button>
+      <button class="card p-4 flex flex-col items-center gap-2 hover:bg-page transition-colors">
+        <span class="tile bg-muted-tint text-ink-2"><svg class="w-[22px] h-[22px]"><use href="#i-download"/></svg></span>
+        <span class="t-body font-medium">SVG</span>
+        <span class="t-meta text-ink-3">For printing</span>
+      </button>
+      <button class="card p-4 flex flex-col items-center gap-2 hover:bg-page transition-colors">
+        <span class="tile bg-muted-tint text-ink-2"><svg class="w-[22px] h-[22px]"><use href="#i-print"/></svg></span>
+        <span class="t-body font-medium">Print label</span>
+        <span class="t-meta text-ink-3">Ready-made sheet</span>
+      </button>
+      <button class="card p-4 flex flex-col items-center gap-2 hover:bg-page transition-colors">
+        <span class="tile bg-muted-tint text-ink-2"><svg class="w-[22px] h-[22px]"><use href="#i-share"/></svg></span>
+        <span class="t-body font-medium">Send link</span>
+        <span class="t-meta text-ink-3">WhatsApp, email</span>
+      </button>
+    </div>
+
+    <div class="notice bg-brand-tint text-ink mt-6">
+      <svg class="w-5 h-5 shrink-0 text-brand mt-0.5"><use href="#i-shield"/></svg>
+      <p>This code never changes. It always shows the latest version of your passport, even after you update it.</p>
+    </div>
+
+    <button class="btn-primary w-full mt-6" data-go="products">Done</button>
+  </div>
+</section>
+
+
+<!-- ============================ EMPTY STATES ============================ -->
+<section id="scr-empty" class="screen flex-col flex-1 min-h-0">
+  <header class="shrink-0 bg-page px-5 pb-3 flex items-center gap-2">
+    <button class="iconbtn -ml-3" aria-label="Open menu"><svg class="w-6 h-6"><use href="#i-menu"/></svg></button>
+    <h1 class="t-title flex-1">Empty states</h1>
+  </header>
+
+  <div class="flex-1 min-h-0 overflow-y-auto scroll-area px-5 pb-8">
+    <p class="t-sec mb-5">Four-part structure everywhere: icon, plain title, one sentence of why, one action.</p>
+
+    <!-- No products -->
+    <div class="card px-5 py-8 text-center">
+      <span class="w-[72px] h-[72px] mx-auto rounded-full bg-brand-tint text-brand grid place-items-center"><svg class="w-9 h-9"><use href="#i-box"/></svg></span>
+      <h2 class="t-section mt-4">No products yet</h2>
+      <p class="t-body text-ink-2 mt-2 max-w-[30ch] mx-auto">Products you add here get a digital passport that buyers can scan.</p>
+      <button class="btn-primary w-full mt-5" data-go="category"><svg class="w-5 h-5"><use href="#i-plus"/></svg>Add your first product</button>
+    </div>
+
+    <!-- No search results -->
+    <div class="card px-5 py-8 text-center mt-3">
+      <span class="w-[72px] h-[72px] mx-auto rounded-full bg-muted-tint text-ink-2 grid place-items-center"><svg class="w-9 h-9"><use href="#i-search"/></svg></span>
+      <h2 class="t-section mt-4">Nothing matched "indgo"</h2>
+      <p class="t-body text-ink-2 mt-2 max-w-[30ch] mx-auto">Check the spelling, or try searching by product code instead.</p>
+      <button class="btn-second w-full mt-5">Clear search</button>
+    </div>
+
+    <!-- Nothing to do -->
+    <div class="card px-5 py-8 text-center mt-3">
+      <span class="w-[72px] h-[72px] mx-auto rounded-full bg-ok-tint text-ok grid place-items-center"><svg class="w-9 h-9"><use href="#i-check-c"/></svg></span>
+      <h2 class="t-section mt-4">Nothing needs you right now</h2>
+      <p class="t-body text-ink-2 mt-2 max-w-[30ch] mx-auto">Every passport is up to date. We'll tell you when something needs attention.</p>
+      <button class="btn-second w-full mt-5" data-go="products">View your products</button>
+    </div>
+
+    <!-- No certificates -->
+    <div class="card px-5 py-8 text-center mt-3">
+      <span class="w-[72px] h-[72px] mx-auto rounded-full bg-muted-tint text-ink-2 grid place-items-center"><svg class="w-9 h-9"><use href="#i-shield"/></svg></span>
+      <h2 class="t-section mt-4">No certificates yet</h2>
+      <p class="t-body text-ink-2 mt-2 max-w-[30ch] mx-auto">Certificates prove your material claims. Buyers in the EU usually ask for them.</p>
+      <button class="btn-primary w-full mt-5"><svg class="w-5 h-5"><use href="#i-upload"/></svg>Upload a certificate</button>
+    </div>
+
+    <!-- Offline: explains and gives one action, no apology -->
+    <div class="card px-5 py-8 text-center mt-3">
+      <span class="w-[72px] h-[72px] mx-auto rounded-full bg-warn-tint text-warn grid place-items-center"><svg class="w-9 h-9"><use href="#i-cloud"/></svg></span>
+      <h2 class="t-section mt-4">You're offline</h2>
+      <p class="t-body text-ink-2 mt-2 max-w-[30ch] mx-auto">Your changes are saved on this phone and will upload when you reconnect.</p>
+      <button class="btn-second w-full mt-5"><svg class="w-5 h-5"><use href="#i-refresh"/></svg>Try again</button>
+    </div>
+  </div>
+
+  <div data-tabbar="dashboard"></div>
+</section>
+
+</div>
+
+        <!-- Home indicator -->
+        <div class="hidden lg:flex shrink-0 justify-center py-2 bg-page">
+          <span class="w-[134px] h-[5px] rounded-full bg-ink/85"></span>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+/* ------------------------------------------------------------------
+   Screen registry. Order mirrors the real flow, not the file listing.
+------------------------------------------------------------------ */
+const SCREENS = [
+  { id:'dashboard',   label:'Dashboard',              group:'Home' },
+  { id:'products',    label:'Products',               group:'Home' },
+  { id:'overview',    label:'Product Overview',       group:'Home' },
+  { id:'category',    label:'Select Product Category',group:'Create' },
+  { id:'template',    label:'Template',               group:'Create' },
+  { id:'create',      label:'Create New Product',     group:'Create' },
+  { id:'builder',     label:'DPP Builder',            group:'Create' },
+  { id:'materials',   label:'Materials',              group:'Sections' },
+  { id:'composition', label:'Material Composition',   group:'Sections' },
+  { id:'matdetails',  label:'Material Details',       group:'Sections' },
+  { id:'production',  label:'Production',             group:'Sections' },
+  { id:'prodmethods', label:'Production Methods',     group:'Sections' },
+  { id:'compliance',  label:'Compliance',             group:'Sections' },
+  { id:'certificates',label:'Certificates',           group:'Sections' },
+  { id:'gots',        label:'GOTS Certificate',       group:'Sections' },
+  { id:'traceability',label:'Traceability',           group:'Sections' },
+  { id:'sustain',     label:'Sustainability',         group:'Sections' },
+  { id:'supplier',    label:'Supplier Request',       group:'Sections' },
+  { id:'visibility',  label:'Visibility & Access',    group:'Publish' },
+  { id:'review',      label:'Review & Publish',       group:'Publish' },
+  { id:'created',     label:'Passport Created',       group:'Publish' },
+  { id:'qr',          label:'QR Code',                group:'Publish' },
+  { id:'empty',       label:'Empty States',           group:'Publish' },
+];
+
+/* ==================================================================
+   Runtime. Three jobs only:
+     1. render the chrome that repeats across screens (tab bar,
+        wizard stepper, product bar) so it can never drift
+     2. generate the placeholder art locally — no network images
+     3. route between screens
+   ================================================================== */
+(function () {
+  'use strict';
+
+  /* ---------------- Generated art ------------------------------
+     Woven-cloth thumbnails, drawn as SVG. Real photos would sit
+     here in production; these keep the file self-contained and
+     stay on-subject (handloom textiles).                        */
+  const CLOTH = {
+    indigo:     { warp: '#2F4A6B', weft: '#1E3350', base: '#E4E8EE' },
+    natural:    { warp: '#C4B49A', weft: '#A08D71', base: '#F2EDE3' },
+    terracotta: { warp: '#C08065', weft: '#9E5F45', base: '#F4E7E0' },
+    jute:       { warp: '#BFA372', weft: '#96793F', base: '#F1E9D8' },
+    stone:      { warp: '#A9A79E', weft: '#807E75', base: '#ECEBE6' },
+  };
+
+  function thumb(name, size) {
+    const c = CLOTH[name] || CLOTH.stone;
+    const id = 'w' + name + size;
+    return `
+      <svg width="${size}" height="${size}" viewBox="0 0 48 48" class="rounded shrink-0" role="img" aria-label="Product photo">
+        <defs>
+          <pattern id="${id}" width="8" height="8" patternUnits="userSpaceOnUse">
+            <rect width="8" height="8" fill="${c.base}"/>
+            <rect x="0" y="0" width="4" height="4" fill="${c.warp}"/>
+            <rect x="4" y="4" width="4" height="4" fill="${c.warp}"/>
+            <rect x="4" y="0" width="4" height="4" fill="${c.weft}" opacity=".55"/>
+            <rect x="0" y="4" width="4" height="4" fill="${c.weft}" opacity=".55"/>
+          </pattern>
+        </defs>
+        <rect width="48" height="48" rx="6" fill="url(#${id})"/>
+        <rect x=".5" y=".5" width="47" height="47" rx="5.5" fill="none" stroke="rgba(31,29,23,.12)"/>
+      </svg>`;
+  }
+
+  /* Deterministic QR-looking mark. Not a scannable code — a placeholder
+     with the right visual density and the three finder squares. */
+  function qr(size) {
+    const N = 25, cell = 100 / N;
+    let seed = 7, r = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+    const finder = (x, y) =>
+      `<rect x="${x * cell}" y="${y * cell}" width="${7 * cell}" height="${7 * cell}" fill="#1C1B17"/>
+       <rect x="${(x + 1) * cell}" y="${(y + 1) * cell}" width="${5 * cell}" height="${5 * cell}" fill="#fff"/>
+       <rect x="${(x + 2) * cell}" y="${(y + 2) * cell}" width="${3 * cell}" height="${3 * cell}" fill="#1C1B17"/>`;
+    const inFinder = (c, rw) =>
+      (c < 8 && rw < 8) || (c > N - 9 && rw < 8) || (c < 8 && rw > N - 9);
+    let cells = '';
+    for (let rw = 0; rw < N; rw++)
+      for (let c = 0; c < N; c++)
+        if (!inFinder(c, rw) && r() > 0.53)
+          cells += `<rect x="${c * cell}" y="${rw * cell}" width="${cell}" height="${cell}" fill="#1C1B17"/>`;
+    return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" role="img" aria-label="QR code for this passport">
+        <rect width="100" height="100" fill="#fff"/>${cells}
+        ${finder(0, 0)}${finder(N - 7, 0)}${finder(0, N - 7)}
+      </svg>`;
+  }
+
+  /* ---------------- Repeating chrome --------------------------- */
+  const TABS = [
+    { id: 'dashboard', label: 'Home',     icon: 'i-home',  active: 'i-home-f' },
+    { id: 'products',  label: 'Products', icon: 'i-box',   active: 'i-box-f'  },
+    { id: 'requests',  label: 'Requests', icon: 'i-inbox', active: 'i-inbox', badge: 5 },
+    { id: 'more',      label: 'More',     icon: 'i-dots',  active: 'i-dots'   },
+  ];
+
+  function tabbar(current) {
+    const item = (t) => {
+      const on = t.id === current;
+      return `
+        <a href="#" data-go="${t.id === 'requests' ? 'supplier' : t.id}"
+           class="flex-1 tap flex-col gap-1 ${on ? 'text-brand' : 'text-ink-3'}"
+           ${on ? 'aria-current="page"' : ''}>
+          <span class="relative">
+            <svg class="w-6 h-6"><use href="#${on ? t.active : t.icon}"/></svg>
+            ${t.badge ? `<span class="absolute -top-1 -right-2 min-w-[17px] h-[17px] px-1 rounded-full bg-risk text-white text-[10px] font-bold grid place-items-center tnum">${t.badge}</span>` : ''}
+          </span>
+          <span class="text-[11px] leading-3 ${on ? 'font-semibold' : 'font-medium'}">${t.label}</span>
+        </a>`;
+    };
+    return `
+      <nav class="shrink-0 relative bg-white border-t border-line pt-2 pb-2.5 px-2 flex items-stretch" aria-label="Main">
+        ${item(TABS[0])}${item(TABS[1])}
+        <span class="w-16 shrink-0"></span>
+        ${item(TABS[2])}${item(TABS[3])}
+        <button data-go="category"
+                class="absolute left-1/2 -translate-x-1/2 -top-6 w-14 h-14 rounded-full bg-brand text-white
+                       grid place-items-center shadow-e3 hover:bg-brand-dark transition-colors"
+                aria-label="Create a new product">
+          <svg class="w-7 h-7"><use href="#i-plus"/></svg>
+        </button>
+      </nav>`;
+  }
+
+  const STEPS = ['Basics', 'Materials', 'Production', 'Traceability', 'Compliance', 'Sustainability', 'Review'];
+
+  /* Wizard progress: bar + "step N of 7". One metaphor, no rings. */
+  function stepper(n) {
+    const pct = Math.round((n / STEPS.length) * 100);
+    return `
+      <div class="px-5 pb-4">
+        <div class="flex items-baseline justify-between mb-2">
+          <p class="t-meta">Step <span class="tnum">${n}</span> of <span class="tnum">${STEPS.length}</span> · ${STEPS[n - 1]}</p>
+          <p class="t-meta tnum">${pct}%</p>
+        </div>
+        <div class="track" role="progressbar" aria-valuenow="${n}" aria-valuemin="1" aria-valuemax="${STEPS.length}"
+             aria-label="Passport progress"><i style="width:${pct}%"></i></div>
+      </div>`;
+  }
+
+  /* Persistent "which product am I editing" bar */
+  function prodbar(spec) {
+    const [cloth, name, sku, tone, status] = spec.split('|');
+    return `
+      <div class="card px-3.5 py-3 flex items-center gap-3">
+        ${thumb(cloth, 40)}
+        <span class="flex-1 min-w-0">
+          <span class="block text-[15px] leading-5 font-semibold text-ink truncate">${name}</span>
+          <span class="block t-meta tnum">${sku}</span>
+        </span>
+        <span class="chip-${tone} h-7 shrink-0">${status}</span>
+      </div>`;
+  }
+
+  /* ---------------- Mount ------------------------------------- */
+  function mount() {
+    document.querySelectorAll('[data-thumb]').forEach((el) => {
+      const [name, size] = el.dataset.thumb.split(':');
+      el.outerHTML = thumb(name, size === 'lg' ? 64 : 44);
+    });
+    document.querySelectorAll('[data-qr]').forEach((el) => { el.innerHTML = qr(+el.dataset.qr); });
+    document.querySelectorAll('[data-tabbar]').forEach((el) => { el.outerHTML = tabbar(el.dataset.tabbar); });
+    document.querySelectorAll('[data-stepper]').forEach((el) => { el.outerHTML = stepper(+el.dataset.stepper); });
+    document.querySelectorAll('[data-prodbar]').forEach((el) => { el.innerHTML = prodbar(el.dataset.prodbar); });
+  }
+
+  /* ---------------- Navigator + routing ------------------------ */
+  function buildNav() {
+    const rail = document.getElementById('railNav');
+    const sel = document.getElementById('screenSelect');
+    let group = null;
+    SCREENS.forEach((s) => {
+      if (s.group !== group) {
+        group = s.group;
+        const h = document.createElement('p');
+        h.className = 'text-[11px] font-bold uppercase tracking-[0.06em] text-ink-3 px-3 pt-4 pb-1';
+        h.textContent = group;
+        rail.appendChild(h);
+      }
+      const a = document.createElement('button');
+      a.className = 'navlink text-left px-3 py-2 rounded text-[14px] font-medium text-ink-2 hover:bg-page transition-colors';
+      a.textContent = s.label;
+      a.dataset.go = s.id;
+      rail.appendChild(a);
+
+      const o = document.createElement('option');
+      o.value = s.id;
+      o.textContent = s.label;
+      sel.appendChild(o);
+    });
+    sel.addEventListener('change', (e) => go(e.target.value));
+  }
+
+  function go(id) {
+    if (!document.getElementById('scr-' + id)) return;
+    document.querySelectorAll('.screen').forEach((s) => s.classList.remove('is-active'));
+    document.getElementById('scr-' + id).classList.add('is-active');
+    document.querySelectorAll('.navlink').forEach((n) => n.classList.toggle('is-active', n.dataset.go === id));
+    const sel = document.getElementById('screenSelect');
+    if (sel.value !== id) sel.value = id;
+    document.querySelectorAll('.scroll-area').forEach((s) => { s.scrollTop = 0; });
+    history.replaceState(null, '', '#' + id);
+  }
+
+  document.addEventListener('click', (e) => {
+    const t = e.target.closest('[data-go]');
+    if (!t) return;
+    e.preventDefault();
+    go(t.dataset.go);
+  });
+
+  mount();
+  buildNav();
+  go((location.hash || '#dashboard').slice(1));
+})();
+
+</script>
+</body>
+</html>
